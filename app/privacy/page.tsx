@@ -1,1 +1,11 @@
-export default function Privacy(){return <Legal title="Privacy Policy" text="We collect only the information needed to provide your account, tests and purchases. We do not sell personal information. Payment details are handled by a trusted payment provider and are never stored in the frontend."/>}
+export default function Privacy() {
+  return (
+    <main style={{ padding: "40px" }}>
+      <h1>Privacy Policy</h1>
+      <p>
+        We collect only the information needed to provide your account and
+        website services.
+      </p>
+    </main>
+  );
+}

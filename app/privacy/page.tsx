@@ -1,0 +1,1 @@
+export default function Privacy(){return <Legal title="Privacy Policy" text="We collect only the information needed to provide your account, tests and purchases. We do not sell personal information. Payment details are handled by a trusted payment provider and are never stored in the frontend."/>}

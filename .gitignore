@@ -1,0 +1,16 @@
+# Dependencies and generated build output
+node_modules/
+.next/
+.pnpm-store/
+
+# Local environment secrets
+.env
+.env.local
+
+# Temporary development diagnostics
+build-output.txt
+dev-output.log
+dev-error.log
+
+# Local backup archives
+backups/

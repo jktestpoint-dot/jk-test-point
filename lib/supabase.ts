@@ -11,7 +11,7 @@ export type Student = {
   [key: string]: unknown;
 };
 
-function getSupabaseConfig() {
+export function getSupabaseConfig() {
   if (!supabaseUrl || !supabaseKey) {
     throw new Error("Supabase is not configured. Add SUPABASE_PUBLISHABLE_KEY to .env.local.");
   }

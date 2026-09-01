@@ -1,1 +1,30 @@
-"use client"; import {useState} from "react"; export default function Contact(){const [sent,setSent]=useState(false);return <section className="container-page py-14"><form onSubmit={e=>{e.preventDefault();setSent(true)}} className="card mx-auto max-w-xl"><p className="eyebrow">Contact us</p><h1 className="mt-2 text-3xl font-bold">We&apos;d love to hear from you</h1><p className="mt-2 text-sm text-slate-500">Questions, feedback or support — send us a note.</p><input required className="input mt-6" placeholder="Your name"/><input required type="email" className="input mt-3" placeholder="Email address"/><textarea required className="input mt-3 min-h-32" placeholder="How can we help?"/>{sent?<p className="mt-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700">Thank you! Our team will get back to you shortly.</p>:<button className="btn-primary mt-5">Send message</button>}</form></section>}
+"use client";
+
+import { FormEvent, useState } from "react";
+
+export default function Contact() {
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
+  const [sending, setSending] = useState(false);
+
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError("");
+    setSent(false);
+    setSending(true);
+    const form = new FormData(event.currentTarget);
+    try {
+      const response = await fetch("/api/contact", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: String(form.get("name") || ""), email: String(form.get("email") || ""), message: String(form.get("message") || "") }) });
+      const body = await response.json().catch(() => null) as { error?: string } | null;
+      if (!response.ok) throw new Error(body?.error || "Unable to send your message.");
+      event.currentTarget.reset();
+      setSent(true);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Unable to send your message.");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return <section className="container-page py-14"><form onSubmit={submit} className="card mx-auto max-w-xl"><p className="eyebrow">Contact us</p><h1 className="mt-2 text-3xl font-bold">We&apos;d love to hear from you</h1><p className="mt-2 text-sm text-slate-500">Questions, feedback or support — send us a note.</p><input required name="name" autoComplete="name" className="input mt-6" placeholder="Your name"/><input required name="email" type="email" autoComplete="email" className="input mt-3" placeholder="Email address"/><textarea required name="message" className="input mt-3 min-h-32" placeholder="How can we help?"/>{sent ? <p className="mt-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700">Thank you! Our team will get back to you shortly.</p> : <button disabled={sending} className="btn-primary mt-5">{sending ? "Sending…" : "Send message"}</button>}{error && <p className="mt-4 rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{error}</p>}</form></section>;
+}

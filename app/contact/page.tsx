@@ -9,15 +9,16 @@ export default function Contact() {
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const formElement = event.currentTarget;
     setError("");
     setSent(false);
     setSending(true);
-    const form = new FormData(event.currentTarget);
+    const form = new FormData(formElement);
     try {
       const response = await fetch("/api/contact", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: String(form.get("name") || ""), email: String(form.get("email") || ""), message: String(form.get("message") || "") }) });
       const body = await response.json().catch(() => null) as { error?: string } | null;
       if (!response.ok) throw new Error(body?.error || "Unable to send your message.");
-      event.currentTarget.reset();
+      formElement.reset();
       setSent(true);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Unable to send your message.");

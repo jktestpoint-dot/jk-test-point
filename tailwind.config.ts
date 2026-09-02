@@ -6,18 +6,18 @@ export default {
     extend: {
       colors: {
         brand: {
-          50: "#eff6ff",
-          100: "#dbeafe",
-          200: "#bfdbfe",
-          300: "#93c5fd",
-          400: "#60a5fa",
-          500: "#2563eb",
-          600: "#1d4ed8",
-          700: "#1d4ed8",
-          900: "#0f2b6e"
+          50: "#fff4f4",
+          100: "#ffe5e5",
+          200: "#fecaca",
+          300: "#fca5a5",
+          400: "#e87979",
+          500: "#a52a2a",
+          600: "#800000",
+          700: "#650000",
+          900: "#3d0000"
         }
       },
-      boxShadow: { card: "0 10px 30px rgba(15,43,110,.08)" }
+      boxShadow: { card: "0 10px 30px rgba(61,0,0,.08)" }
     }
   },
   plugins: []

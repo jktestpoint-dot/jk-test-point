@@ -17,7 +17,12 @@ update public."MOCK_TESTS" test
 set
   question_count = counts.question_count,
   duration_minutes = counts.question_count,
-  total_marks = counts.question_count
+  -- `total_marks` remains subject to its existing positive-value constraint.
+  -- A test with no imported questions is unavailable, not a zero-mark test.
+  total_marks = case
+    when counts.question_count > 0 then counts.question_count
+    else test.total_marks
+  end
 from (
   select test_row.id, count(question.id)::integer as question_count
   from public."MOCK_TESTS" test_row
@@ -28,7 +33,7 @@ where test.id = counts.id
   and (
     test.question_count is distinct from counts.question_count
     or test.duration_minutes is distinct from counts.question_count
-    or test.total_marks is distinct from counts.question_count
+    or (counts.question_count > 0 and test.total_marks is distinct from counts.question_count)
   );
 
 create or replace function public.replace_test_questions(p_test_id text, p_questions jsonb)

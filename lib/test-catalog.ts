@@ -13,7 +13,7 @@ function isCatalogTest(value: unknown): value is CatalogTest {
     MAIN_CATEGORIES.includes(test.main_category as MainCategory) &&
     typeof test.subcategory === "string" && test.subcategory.trim().length > 0 &&
     Number.isInteger(test.question_count) && (test.question_count as number) >= 0 &&
-    Number.isInteger(test.duration_minutes) && (test.duration_minutes as number) > 0 &&
+    Number.isInteger(test.duration_minutes) && (test.duration_minutes as number) >= 0 &&
     typeof test.price === "number" && typeof test.total_marks === "number" &&
     typeof test.negative_marking === "string" && typeof test.featured === "boolean";
 }
@@ -45,10 +45,14 @@ async function getStoredQuestionCount(testId: string): Promise<number> {
 
 async function withStoredQuestionCounts(tests: CatalogTest[]): Promise<CatalogTest[]> {
   return Promise.all(
-    tests.map(async (test) => ({
-      ...test,
-      question_count: await getStoredQuestionCount(test.id),
-    })),
+    tests.map(async (test) => {
+      const questionCount = await getStoredQuestionCount(test.id);
+      return {
+        ...test,
+        question_count: questionCount,
+        duration_minutes: questionCount,
+      };
+    }),
   );
 }
 
@@ -79,9 +83,11 @@ export async function getPublishedCatalogTest(id: string): Promise<CatalogTest |
   });
   const data = await catalogRequest(`?${params.toString()}`);
   if (!Array.isArray(data) || !isCatalogTest(data[0])) return null;
+  const questionCount = await getStoredQuestionCount(data[0].id);
   return {
     ...data[0],
-    question_count: await getStoredQuestionCount(data[0].id),
+    question_count: questionCount,
+    duration_minutes: questionCount,
   };
 }
 

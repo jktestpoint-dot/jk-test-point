@@ -10,11 +10,11 @@ function isCatalogTest(value: unknown): value is CatalogTest {
   if (!value || typeof value !== "object") return false;
   const test = value as Record<string, unknown>;
   return typeof test.id === "string" && typeof test.title === "string" &&
-    typeof test.main_category === "string" && test.main_category.trim().length > 0 &&
+    MAIN_CATEGORIES.includes(test.main_category as MainCategory) &&
     typeof test.subcategory === "string" && test.subcategory.trim().length > 0 &&
     Number.isInteger(test.question_count) && (test.question_count as number) >= 0 &&
     Number.isInteger(test.duration_minutes) && (test.duration_minutes as number) > 0 &&
-    typeof test.price === "number" && (test.library_section === null || typeof test.library_section === "string") && typeof test.total_marks === "number" &&
+    typeof test.price === "number" && typeof test.total_marks === "number" &&
     typeof test.negative_marking === "string" && typeof test.featured === "boolean";
 }
 
@@ -65,14 +65,14 @@ async function catalogRequest(path: string) {
 }
 
 export async function getPublishedCatalogTests(): Promise<CatalogTest[]> {
-  const data = await catalogRequest("?select=id,title,main_category,subcategory,description,question_count,duration_minutes,price,library_section,total_marks,negative_marking,featured&published=eq.true&order=created_at.desc");
+  const data = await catalogRequest("?select=id,title,main_category,subcategory,description,question_count,duration_minutes,price,total_marks,negative_marking,featured&published=eq.true&order=created_at.desc");
   const tests = Array.isArray(data) ? data.filter(isCatalogTest) : [];
   return withStoredQuestionCounts(tests);
 }
 
 export async function getPublishedCatalogTest(id: string): Promise<CatalogTest | null> {
   const params = new URLSearchParams({
-    select: "id,title,main_category,subcategory,description,question_count,duration_minutes,price,library_section,total_marks,negative_marking,featured",
+    select: "id,title,main_category,subcategory,description,question_count,duration_minutes,price,total_marks,negative_marking,featured",
     published: "eq.true",
     id: `eq.${id}`,
     limit: "1"

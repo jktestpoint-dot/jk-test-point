@@ -1,11 +1,5 @@
-/**
- * These are the currently supported category labels for authoring. Runtime
- * catalogue reads deliberately use the value saved on each published record,
- * so an existing published record is never hidden merely because its category
- * is not in this convenience list.
- */
 export const MAIN_CATEGORIES = ["JKSSB", "Banking", "Kashmir University", "High Court"] as const;
-export type MainCategory = string;
+export type MainCategory = (typeof MAIN_CATEGORIES)[number];
 
 export type PublicTestQuestion = {
   id: string;
@@ -25,7 +19,6 @@ export type CatalogTest = {
   question_count: number;
   duration_minutes: number;
   price: number;
-  library_section: string | null;
   total_marks: number;
   negative_marking: string;
   featured: boolean;

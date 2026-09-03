@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { type CatalogTest } from "@/lib/mock-test-types";
+import { MAIN_CATEGORIES, type CatalogTest } from "@/lib/mock-test-types";
 
 type ApiResponse = { data?: CatalogTest[]; error?: string };
 
@@ -29,18 +29,10 @@ export default function MockTests() {
     return () => { active = false; };
   }, []);
 
-  const grouped = useMemo(() => Array.from(
-    tests.reduce((groups, test) => {
-      const group = groups.get(test.main_category) || [];
-      group.push(test);
-      groups.set(test.main_category, group);
-      return groups;
-    }, new Map<string, CatalogTest[]>()).entries(),
-  ).map(([main, groupTests]) => ({
+  const grouped = useMemo(() => MAIN_CATEGORIES.map((main) => ({
     main,
-    tests: groupTests.sort((a, b) => a.subcategory.localeCompare(b.subcategory) || a.title.localeCompare(b.title)),
-  })).sort((a, b) => a.main.localeCompare(b.main)), [tests]);
-  const utMockTests = useMemo(() => tests.filter((test) => test.library_section === "UT Mock").sort((a, b) => a.title.localeCompare(b.title)), [tests]);
+    tests: tests.filter((test) => test.main_category === main).sort((a, b) => a.subcategory.localeCompare(b.subcategory) || a.title.localeCompare(b.title)),
+  })), [tests]);
   const shown = useMemo(() => tests.filter((test) => {
     const [main, subcategory] = category.split("::");
     const matchesCategory = category === "All" || (test.main_category === main && (!subcategory || test.subcategory === subcategory));
@@ -53,7 +45,7 @@ export default function MockTests() {
     </div></div>
     {loading && <div className="card mt-6 text-center text-stone-500">Loading mock tests…</div>}
     {!loading && error && <div className="card mt-6 text-center text-rose-700">{error}</div>}
-    {!loading && !error && category === "All" && !query && <div className="mt-10 space-y-10" aria-label="Mock tests by category"><section><div className="flex items-center gap-3"><span className="h-px flex-1 bg-brand-100" /><h2 className="text-lg font-bold text-brand-700">UT Mock</h2><span className="h-px flex-1 bg-brand-100" /></div>{utMockTests.length ? <div className="mt-5 grid gap-5 md:grid-cols-2 lg:grid-cols-3">{utMockTests.map((test) => <TestCard key={test.id} test={test} />)}</div> : <div className="card mt-5 text-sm text-stone-500">No published UT Mock tests yet.</div>}</section>{grouped.map((group) => <section key={group.main}><div className="flex items-center gap-3"><span className="h-px flex-1 bg-brand-100" /><h2 className="text-lg font-bold text-brand-700">{group.main}</h2><span className="h-px flex-1 bg-brand-100" /></div>{group.tests.filter((test) => test.library_section !== "UT Mock").length ? <div className="mt-5 grid gap-5 md:grid-cols-2 lg:grid-cols-3">{group.tests.filter((test) => test.library_section !== "UT Mock").map((test) => <TestCard key={test.id} test={test} />)}</div> : <div className="card mt-5 text-sm text-stone-500">No published tests in this category yet.</div>}</section>)}</div>}
+    {!loading && !error && category === "All" && !query && <div className="mt-10 space-y-10" aria-label="Mock tests by category">{grouped.map((group) => <section key={group.main}><div className="flex items-center gap-3"><span className="h-px flex-1 bg-brand-100" /><h2 className="text-lg font-bold text-brand-700">{group.main}</h2><span className="h-px flex-1 bg-brand-100" /></div>{group.tests.length ? <div className="mt-5 grid gap-5 md:grid-cols-2 lg:grid-cols-3">{group.tests.map((test) => <TestCard key={test.id} test={test} />)}</div> : <div className="card mt-5 text-sm text-stone-500">No published tests in this category yet.</div>}</section>)}</div>}
     {!loading && !error && (category !== "All" || query) && <><p className="mt-6 text-sm text-stone-500">{shown.length} test{shown.length !== 1 ? "s" : ""} found</p><div className="mt-4 grid gap-5 md:grid-cols-2 lg:grid-cols-3">{shown.map((test) => <TestCard key={test.id} test={test} />)}</div>{!shown.length && <div className="card mt-5 text-center text-stone-500">No tests match these filters. Try a different search.</div>}</>}
   </section>;
 }

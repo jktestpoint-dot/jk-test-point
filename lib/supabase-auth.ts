@@ -54,3 +54,18 @@ export async function getAuthenticatedStudent(accessToken: string): Promise<Auth
     : user.email?.split("@")[0] || "Student";
   return { id: user.id, email: user.email, name };
 }
+
+export async function refreshStudentSession(refreshToken: string) {
+  const { url, key } = getSupabaseConfig();
+  const response = await fetch(`${url}/auth/v1/token?grant_type=refresh_token`, {
+    method: "POST",
+    headers: { apikey: key, "Content-Type": "application/json" },
+    body: JSON.stringify({ refresh_token: refreshToken }),
+    cache: "no-store",
+  });
+
+  if (!response.ok) return null;
+  const session = await response.json().catch(() => null) as { access_token?: string; refresh_token?: string } | null;
+  if (!session?.access_token || !session.refresh_token) return null;
+  return { accessToken: session.access_token, refreshToken: session.refresh_token };
+}

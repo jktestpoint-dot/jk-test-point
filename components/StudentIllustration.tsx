@@ -1,0 +1,5 @@
+type Props = { compact?: boolean; className?: string };
+
+export function StudentIllustration({ compact = false, className = "" }: Props) {
+  return <div className={`student-visual ${compact ? "h-24 w-28" : "h-44 w-full sm:w-64"} ${className}`} role="img" aria-label="Illustration of a male student studying at a laptop"><div className="absolute -right-5 -top-5 h-20 w-20 rounded-full bg-brand-100"/><div className={`absolute rounded-full bg-amber-200 ${compact ? "left-10 top-4 h-8 w-8" : "left-24 top-7 h-12 w-12"}`} /><div className={`absolute rounded-t-[45%] bg-brand-700 ${compact ? "left-7 top-11 h-11 w-14" : "left-[78px] top-[68px] h-20 w-[88px]"}`} /><div className={`absolute rounded-sm bg-stone-700 shadow-lg ${compact ? "bottom-5 left-3 h-5 w-20" : "bottom-7 left-8 h-9 w-48"}`}><div className="absolute inset-x-1 top-1 h-[2px] bg-stone-500"/></div><div className={`absolute rounded-full bg-brand-200 ${compact ? "bottom-1 right-3 h-9 w-9" : "bottom-2 right-5 h-16 w-16"}`} /><div className={`absolute rounded-full bg-brand-300 ${compact ? "bottom-5 right-8 h-2 w-2" : "bottom-9 right-14 h-3 w-3"}`} /></div>;
+}

@@ -5,7 +5,7 @@ import { getPublishedCatalogTest } from "@/lib/test-catalog";
 export default async function TestDetails({ params }: { params: { id: string } }) {
   const test = await getPublishedCatalogTest(params.id).catch(() => null);
   if (!test) return notFound();
-  const details = [["Questions", test.question_count], ["Duration", `${test.duration_minutes} minutes`], ["Total marks", test.question_count], ["Negative marking", test.negative_marking]];
+  const details = [["Questions", test.question_count], ["Duration", `${test.duration_minutes} minutes`], ["Total marks", test.total_marks], ["Negative marking", test.negative_marking]];
 
   return <section className="container-page section-space"><div className="mx-auto max-w-4xl">
     <div className="page-intro"><p className="eyebrow">{test.main_category} · {test.subcategory}</p><h1 className="mt-2 max-w-3xl text-3xl font-bold sm:text-4xl">{test.title}</h1><p className="mt-4 max-w-3xl text-lg leading-7 text-stone-600">{test.description}</p><div className="mt-7 flex flex-wrap items-center gap-3"><b className="text-xl text-brand-700">{test.price ? `₹${test.price}` : "Free test"}</b><span className="h-1 w-1 rounded-full bg-brand-300" /><span className="text-sm font-medium text-stone-500">Mock test details</span></div></div>

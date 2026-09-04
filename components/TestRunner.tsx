@@ -8,6 +8,7 @@ import type { CatalogTest, PublicTestQuestion } from "@/lib/mock-test-types";
 type AttemptResult = {
   attempt_id?: string;
   score?: number;
+  total_marks?: number;
   correct?: number;
   incorrect?: number;
   unattempted?: number;
@@ -94,6 +95,7 @@ export function TestRunner({ testId }: { testId: string }) {
         time: actualQuestionCount * 60 - seconds,
         questions,
         totalQuestions: actualQuestionCount,
+        totalMarks: result.data?.total_marks ?? actualQuestionCount,
       }));
       const attemptId = result.data?.attempt_id;
       router.push(`/results?test=${encodeURIComponent(testId)}${attemptId ? `&attempt=${encodeURIComponent(attemptId)}` : ""}`);

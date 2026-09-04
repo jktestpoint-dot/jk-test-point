@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
   try {
     const { url, key } = getSupabaseConfig();
     const params = new URLSearchParams({
-      select: "id,test_id,test_title,score,percentage,answers,review,created_at",
+      select: "id,test_id,test_title,score,percentage,total_marks,answers,review,created_at",
       order: "created_at.desc",
       limit: "1",
     });

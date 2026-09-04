@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import type { PublicTestQuestion } from "@/lib/mock-test-types";
@@ -29,7 +29,7 @@ type Result = {
   unattempted?: number;
 };
 
-export default function Results() {
+function ResultsContent() {
   const [result, setResult] = useState<Result | null>(null);
   const searchParams = useSearchParams();
   const attemptId = searchParams.get("attempt");
@@ -90,4 +90,8 @@ export default function Results() {
   });
 
   return <section className="container-page py-10"><p className="eyebrow">Test complete</p><h1 className="mt-2 text-3xl font-bold">Here&apos;s how you performed</h1><div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-4"><div className="card bg-brand-700 !text-white"><p className="text-sm text-brand-100">Your score</p><b className="mt-2 block text-4xl">{result.score}/{totalQuestions}</b><p className="mt-1 text-sm text-brand-100">{totalQuestions ? Math.round((correct / totalQuestions) * 100) : 0}% accuracy</p></div>{[["Correct", correct, "text-emerald-600"], ["Incorrect", incorrect, "text-rose-600"], ["Unattempted", unattempted, "text-amber-600"]].map(([label, value, colour]) => <div className="card" key={String(label)}><p className="text-sm text-stone-500">{label}</p><b className={`mt-2 block text-4xl ${colour}`}>{value}</b><p className="mt-1 text-sm text-stone-500">Time taken: {Math.floor(result.time / 60)}m {result.time % 60}s</p></div>)}</div><div className="card mt-7"><div className="flex justify-between"><h2 className="font-bold">Submitted answers</h2><span className="text-sm text-stone-500">Rank: Coming soon</span></div><div className="mt-5 space-y-5">{review.map((question) => { const statusClass = question.status === "correct" ? "text-emerald-600" : question.status === "incorrect" ? "text-rose-600" : "text-amber-600"; const statusLabel = question.status === "correct" ? "Correct" : question.status === "incorrect" ? "Incorrect" : "Unattempted"; return <article className="rounded-xl border border-stone-100 p-4" key={question.question_id}><p className="font-semibold">{question.question_number}. {question.question_text}</p><p className="mt-2 text-sm"><b>Your answer:</b> {question.selected_answer ? `${question.selected_option}. ${question.selected_answer}` : "Not attempted"}</p><p className="mt-1 text-sm"><b>Correct answer:</b> {question.correct_answer ? `${question.correct_option}. ${question.correct_answer}` : "Not available for this earlier submission"}</p><p className={`mt-1 text-sm font-semibold ${statusClass}`}>Status: {statusLabel}</p><p className="mt-3 border-t border-stone-100 pt-3 text-sm leading-6 text-stone-600"><b>Explanation:</b> {question.explanation?.trim() || "Explanation not available"}</p></article>; })}</div></div></section>;
+}
+
+export default function Results() {
+  return <Suspense fallback={<section className="container-page py-20 text-center"><p className="text-stone-500">Loading submitted result…</p></section>}><ResultsContent /></Suspense>;
 }

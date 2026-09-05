@@ -7,7 +7,7 @@ import { MAIN_CATEGORIES, type CatalogTest } from "@/lib/mock-test-types";
 type ApiResponse = { data?: CatalogTest[]; error?: string };
 
 function TestCard({ test }: { test: CatalogTest }) {
-  return <article className="card card-lift flex h-full flex-col" key={test.id}><span className="text-xs font-bold text-brand-600">{test.main_category} · {test.subcategory}</span><h2 className="mt-3 font-bold">{test.title}</h2><p className="mt-2 text-sm text-stone-500">{test.question_count} Questions · {test.duration_minutes} minutes</p><div className="mt-auto flex items-center justify-between gap-4 pt-5"><b className="text-brand-700">{test.price ? `₹${test.price}` : "Free"}</b><Link className="btn-primary shrink-0 !px-4 !py-2" href={`/mock-tests/${test.id}`}>Start Test</Link></div></article>;
+  return <article className="card card-lift flex h-full flex-col" key={test.id}><div className="flex items-start justify-between gap-3"><span className="text-xs font-bold text-brand-600">{test.main_category} · {test.subcategory}</span>{test.question_count === 0 && <span className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-bold text-brand-700">Coming Soon</span>}</div><h2 className="mt-3 font-bold">{test.title}</h2><p className="mt-2 text-sm text-stone-500">{test.question_count} Questions · {test.duration_minutes} minutes</p><div className="mt-auto flex items-center justify-between gap-4 pt-5"><b className="text-brand-700">{test.price ? `₹${test.price}` : "Free"}</b><Link className="btn-primary shrink-0 !px-4 !py-2" href={`/mock-tests/${test.id}`}>Start Test</Link></div></article>;
 }
 
 export default function MockTests() {

@@ -37,7 +37,7 @@ function cell(row: Record<string, unknown>, header: string) {
   return String(row[header] ?? "").trim();
 }
 
-export async function parseQuestionFile(file: File): Promise<QuestionImportPreview> {
+export async function parseQuestionFile(file: File, options: { requireMockTest?: boolean } = {}): Promise<QuestionImportPreview> {
   const fileName = file.name.toLowerCase();
   if (!fileName.endsWith(".csv") && !fileName.endsWith(".xlsx")) {
     return { rows: [], errors: ["Upload a CSV or XLSX file."], validRowCount: 0, failedRowCount: 0 };
@@ -90,7 +90,7 @@ export async function parseQuestionFile(file: File): Promise<QuestionImportPrevi
     for (const option of ["option_a", "option_b", "option_c", "option_d"] as const) if (!value[option]) addError(index, `${option} is empty.`);
     if (!/^[ABCD]$/.test(value.correct_option)) addError(index, "correct_answer must be A, B, C, or D.");
     if (modernFormat && !value.subject) addError(index, "subject is empty.");
-    if (modernFormat && !value.mock_test) addError(index, "mock_test is empty.");
+    if (modernFormat && options.requireMockTest !== false && !value.mock_test) addError(index, "mock_test is empty.");
     return value;
   });
 

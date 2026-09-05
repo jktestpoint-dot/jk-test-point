@@ -3,6 +3,7 @@ export const MCQ_PRACTICE_SUBJECTS = [
   { id: "mathematics", name: "Mathematics", mcqCount: 250, price: 25 },
   { id: "statistics", name: "Statistics", mcqCount: 250, price: 25 },
   { id: "economics", name: "Economics", mcqCount: 250, price: 25 },
+  { id: "computer", name: "Computer", mcqCount: 400, price: 30 },
 ] as const;
 
 export function getMcqPracticeSubject(id: string) {

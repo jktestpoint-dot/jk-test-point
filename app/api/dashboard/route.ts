@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { ACCESS_TOKEN_COOKIE, getAuthenticatedStudent } from "@/lib/supabase-auth";
-import { getStudentAttempts } from "@/lib/supabase";
+import { getStudentAttempts, getStudentSubjectAttempts, type TestAttempt } from "@/lib/supabase";
 import { getMyActiveSubjectEntitlements } from "@/lib/subject-entitlement";
 import { getMcqPracticeSubject } from "@/lib/mcq-practice";
 
@@ -20,10 +20,26 @@ export async function GET() {
     if (!accessToken) return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
     const user = await getAuthenticatedStudent(accessToken);
     if (!user) return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
-    const [attempts, entitlements] = await Promise.all([
+    const [mockAttempts, subjectAttempts, entitlements] = await Promise.all([
       getStudentAttempts(accessToken, user.id),
+      getStudentSubjectAttempts(accessToken, user.id),
       getMyActiveSubjectEntitlements(accessToken, user.id),
     ]);
+    const attempts: TestAttempt[] = [
+      ...mockAttempts,
+      ...subjectAttempts.map((attempt) => {
+        const subject = getMcqPracticeSubject(attempt.subject);
+        return {
+          id: `subject:${attempt.id}`,
+          user_id: attempt.user_id,
+          test_id: null,
+          test_title: subject ? `${subject.name} MCQ Practice` : `${attempt.subject} MCQ Practice`,
+          score: attempt.score,
+          percentage: attempt.percentage,
+          created_at: attempt.created_at,
+        };
+      }),
+    ].sort((left, right) => Date.parse(right.created_at) - Date.parse(left.created_at));
     const purchasedTests = entitlements.flatMap((entitlement) => {
       const subject = getMcqPracticeSubject(entitlement.subject);
       if (!subject) return [];

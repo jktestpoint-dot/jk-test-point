@@ -19,6 +19,15 @@ export type TestAttempt = {
   created_at: string;
 };
 
+export type SubjectMcqAttempt = {
+  id: string;
+  user_id: string;
+  subject: string;
+  score: number;
+  percentage: number;
+  created_at: string;
+};
+
 export type DashboardProgress = { tests_done: number; accuracy: number; best_score: number; student_rank: number };
 
 export function getSupabaseConfig() {
@@ -55,6 +64,21 @@ export async function getStudentAttempts(accessToken: string, userId: string): P
   });
   if (!response.ok) throw new Error(`Supabase test attempts query failed (${response.status}).`);
   return response.json() as Promise<TestAttempt[]>;
+}
+
+export async function getStudentSubjectAttempts(accessToken: string, userId: string): Promise<SubjectMcqAttempt[]> {
+  const { url, key } = getSupabaseConfig();
+  const params = new URLSearchParams({
+    select: "id,user_id,subject,score,percentage,created_at",
+    user_id: `eq.${userId}`,
+    order: "created_at.desc",
+  });
+  const response = await fetch(`${url}/rest/v1/SUBJECT_MCQ_ATTEMPTS?${params.toString()}`, {
+    headers: { apikey: key, Authorization: `Bearer ${accessToken}`, "Accept-Profile": "public" },
+    cache: "no-store",
+  });
+  if (!response.ok) throw new Error(`Supabase subject attempts query failed (${response.status}).`);
+  return response.json() as Promise<SubjectMcqAttempt[]>;
 }
 
 export async function createStudentAttempt(accessToken: string, attempt: Omit<TestAttempt, "id" | "created_at">): Promise<TestAttempt> {

@@ -1,1 +1,23 @@
-import Link from "next/link"; const plans=[{name:"Free",price:"₹0",text:"Try the platform",items:["Selected free tests","Basic results","Question review"]},{name:"Basic",price:"₹199/mo",text:"For consistent practice",items:["All standard mock tests","Performance analytics","Priority support"]},{name:"Premium",price:"₹499/mo",text:"For serious aspirants",items:["Everything in Basic","Premium test series","Advanced rank insights"]}]; export default function Pricing(){return <section className="container-page py-12 text-center"><p className="eyebrow">Flexible plans</p><h1 className="mt-2 text-4xl font-bold">Choose your preparation plan</h1><p className="mt-3 text-stone-500">Change plan content and prices in one simple data object.</p><div className="mt-10 grid gap-5 text-left md:grid-cols-3">{plans.map((p,i)=><article className={`card ${i===1?"ring-2 ring-brand-500":""}`} key={p.name}>{i===1&&<span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-bold text-brand-700">Most popular</span>}<h2 className="mt-4 text-xl font-bold">{p.name}</h2><p className="mt-1 text-sm text-stone-500">{p.text}</p><b className="mt-5 block text-3xl text-brand-700">{p.price}</b><ul className="mt-6 space-y-3 text-sm text-stone-600">{p.items.map(x=><li key={x}>✓ {x}</li>)}</ul><Link href="/register" className="btn-primary mt-7 w-full">Get started</Link></article>)}</div></section>}
+import Link from "next/link";
+import { MCQ_PRACTICE_SUBJECTS } from "@/lib/mcq-practice";
+import { getAvailableFreePracticeSubjects } from "@/lib/free-subject-catalog";
+
+export default async function Pricing() {
+  const freePracticeSubjects = await getAvailableFreePracticeSubjects().catch(() => []);
+  const firstFreePracticeSubject = freePracticeSubjects[0];
+  return <section className="container-page py-12 text-center">
+    <p className="eyebrow">Subject-wise preparation</p>
+    <h1 className="mt-2 text-4xl font-bold">MCQ Practice</h1>
+    <p className="mt-3 text-stone-500">Choose a subject and practise with its dedicated MCQ question bank.</p>
+    <div className="mt-10 grid gap-5 text-left sm:grid-cols-2 lg:grid-cols-4">
+      {MCQ_PRACTICE_SUBJECTS.map((subject) => <article className="card" key={subject.id}>
+        <h2 className="text-xl font-bold">{subject.name}</h2>
+        <p className="mt-2 text-sm text-stone-500">{subject.mcqCount} MCQs</p>
+        <b className="mt-5 block text-3xl text-brand-700">₹{subject.price}</b>
+        <p className="mt-1 text-sm text-stone-500">Per subject</p>
+        <Link href={`/mcq-practice/${subject.id}`} className="btn-primary mt-7 w-full">Start Practice</Link>
+      </article>)}
+    </div>
+    {firstFreePracticeSubject && <div className="mx-auto mt-10 max-w-3xl rounded-xl border border-brand-100 bg-brand-50 p-5 text-left sm:flex sm:items-center sm:justify-between sm:gap-5"><div><p className="text-sm font-bold text-brand-700">Free MCQ Practice</p><p className="mt-1 text-sm text-stone-600">Try {firstFreePracticeSubject.freeQuestionCount} free {firstFreePracticeSubject.name} MCQ{firstFreePracticeSubject.freeQuestionCount === 1 ? "" : "s"} before purchasing a subject set.</p></div><Link href={`/free-mcq-practice/${firstFreePracticeSubject.id}`} className="btn-secondary mt-4 shrink-0 sm:mt-0">Start Free Practice</Link></div>}
+  </section>;
+}

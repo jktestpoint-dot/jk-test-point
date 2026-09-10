@@ -6,14 +6,13 @@ const cookieOptions = { httpOnly: true, sameSite: "lax" as const, secure: proces
 export async function POST(request: NextRequest) {
   try {
     const { name, email, password } = await request.json();
-    if (!name || !email || !password) return NextResponse.json({ error: "Name, email and password are required." }, { status: 400 });
-    const result = await registerStudent(name, email, password);
-    const response = NextResponse.json({ requiresEmailConfirmation: !result.access_token });
-    if (result.access_token && result.refresh_token) {
-      response.cookies.set(ACCESS_TOKEN_COOKIE, result.access_token, cookieOptions);
-      response.cookies.set(REFRESH_TOKEN_COOKIE, result.refresh_token, cookieOptions);
-    }
-    return response;
+    const normalizedName = typeof name === "string" ? name.trim() : "";
+    const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
+    if (!normalizedName || !normalizedEmail || !password) return NextResponse.json({ error: "Name, email and password are required." }, { status: 400 });
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });
+    if (typeof password !== "string" || password.length < 8) return NextResponse.json({ error: "Password must be at least 8 characters." }, { status: 400 });
+    await registerStudent(normalizedName, normalizedEmail, password);
+    return NextResponse.json({ requiresEmailVerification: true });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to create your account." }, { status: 400 });
   }

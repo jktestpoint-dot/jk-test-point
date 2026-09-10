@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE, getAuthenticatedStudent, refreshStudentSession } from "@/lib/supabase-auth";
 import { getSupabaseConfig } from "@/lib/supabase";
 import { getMcqPracticeSubject } from "@/lib/mcq-practice";
+import { hasActiveSubjectEntitlement } from "@/lib/subject-entitlement";
 
 async function session() {
   const store = cookies();
@@ -42,6 +43,7 @@ export async function POST(request: NextRequest, { params }: { params: { subject
   if (!getMcqPracticeSubject(params.subject)) return NextResponse.json({ error: "Subject not found." }, { status: 404 });
   const { token, user, refreshed } = await session();
   if (!token || !user) return NextResponse.json({ error: "Please log in before submitting practice." }, { status: 401 });
+  if (!await hasActiveSubjectEntitlement(token, params.subject)) return NextResponse.json({ error: "Purchase is required to submit this subject." }, { status: 403 });
   try {
     const { answers } = await request.json() as { answers?: unknown };
     if (!Array.isArray(answers)) return NextResponse.json({ error: "Invalid practice attempt." }, { status: 400 });

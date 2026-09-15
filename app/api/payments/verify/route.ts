@@ -75,7 +75,11 @@ export async function POST(request: NextRequest) {
 
   try {
     const { url } = getSupabaseConfig();
-    const response = await fetch(`${url}/rest/v1/rpc/complete_subject_payment_order`, {
+    const orderLookup = await fetch(`${url}/rest/v1/payment_orders?select=product_type&provider=eq.razorpay&provider_order_id=eq.${encodeURIComponent(orderId)}&user_id=eq.${encodeURIComponent(user.id)}&limit=1`, { headers: { apikey: config.serviceRoleKey, Authorization: `Bearer ${config.serviceRoleKey}`, "Accept-Profile": "public" }, cache: "no-store" });
+    const orderRows = await orderLookup.json().catch(() => []) as Array<{ product_type?: string }>;
+    if (!orderLookup.ok || !orderRows[0]?.product_type) return NextResponse.json({ error: "Unknown payment order." }, { status: 400 });
+    const completionRpc = orderRows[0].product_type === "mock_test" ? "complete_mock_payment_order" : "complete_subject_payment_order";
+    const response = await fetch(`${url}/rest/v1/rpc/${completionRpc}`, {
       method: "POST",
       headers: {
         apikey: config.serviceRoleKey,

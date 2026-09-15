@@ -8,6 +8,7 @@ import {
 } from "@/lib/supabase-auth";
 import { getMcqPracticeSubject } from "@/lib/mcq-practice";
 import { getSupabaseConfig } from "@/lib/supabase";
+import { getPublishedCatalogTest } from "@/lib/test-catalog";
 
 type RefreshedSession = Awaited<ReturnType<typeof refreshStudentSession>>;
 type StoredOrder = { provider_order_id: string | null; amount_paise: number; currency: string };
@@ -50,14 +51,14 @@ function getPaymentConfig() {
   return { keyId, keySecret, serviceRoleKey };
 }
 
-async function findReusableOrder(userId: string, subjectId: string, amountPaise: number, serviceRoleKey: string) {
+async function findReusableOrder(userId: string, productType: string, productId: string, amountPaise: number, serviceRoleKey: string) {
   const { url } = getSupabaseConfig();
   const params = new URLSearchParams({
     select: "provider_order_id,amount_paise,currency",
     user_id: `eq.${userId}`,
     provider: "eq.razorpay",
-    product_type: "eq.subject_mcq",
-    product_id: `eq.${subjectId}`,
+    product_type: `eq.${productType}`,
+    product_id: `eq.${productId}`,
     status: "eq.created",
     amount_paise: `eq.${amountPaise}`,
     order: "created_at.desc",
@@ -72,7 +73,7 @@ async function findReusableOrder(userId: string, subjectId: string, amountPaise:
   return rows[0]?.provider_order_id ? rows[0] : null;
 }
 
-async function createStoredOrder(input: { userId: string; subjectId: string; amountPaise: number; providerOrderId: string; serviceRoleKey: string }) {
+async function createStoredOrder(input: { userId: string; productType: string; productId: string; amountPaise: number; providerOrderId: string; serviceRoleKey: string }) {
   const { url } = getSupabaseConfig();
   const response = await fetch(`${url}/rest/v1/payment_orders`, {
     method: "POST",
@@ -87,8 +88,8 @@ async function createStoredOrder(input: { userId: string; subjectId: string; amo
       user_id: input.userId,
       provider: "razorpay",
       provider_order_id: input.providerOrderId,
-      product_type: "subject_mcq",
-      product_id: input.subjectId,
+      product_type: input.productType,
+      product_id: input.productId,
       amount_paise: input.amountPaise,
       currency: "INR",
       status: "created",
@@ -102,35 +103,40 @@ export async function POST(request: NextRequest) {
   const { user, refreshed } = await getSession();
   if (!user) return NextResponse.json({ error: "Please log in before starting a payment." }, { status: 401 });
 
-  let subjectId: string;
+  let subjectId = "";
+  let mockTestId = "";
   try {
-    const body = await request.json() as { subject?: unknown };
+    const body = await request.json() as { subject?: unknown; mockTestId?: unknown };
     subjectId = typeof body.subject === "string" ? body.subject.trim().toLowerCase() : "";
+    mockTestId = typeof body.mockTestId === "string" ? body.mockTestId.trim() : "";
   } catch {
     return NextResponse.json({ error: "Invalid payment request." }, { status: 400 });
   }
 
-  const subject = getMcqPracticeSubject(subjectId);
-  if (!subject) return NextResponse.json({ error: "This subject is not available for purchase." }, { status: 404 });
+  const subject = subjectId ? getMcqPracticeSubject(subjectId) : null;
+  const mock = !subject && mockTestId ? await getPublishedCatalogTest(mockTestId).catch(() => null) : null;
+  if (!subject && !mock) return NextResponse.json({ error: "This product is not available for purchase." }, { status: 404 });
 
   const config = getPaymentConfig();
   if (!config) return NextResponse.json({ error: "Razorpay test-mode payments are not configured." }, { status: 503 });
 
-  const amountPaise = subject.price * 100;
+  const productType = subject ? "subject_mcq" : "mock_test";
+  const productId = subject ? subject.id : (mock as NonNullable<typeof mock>).id;
+  const amountPaise = (subject ? subject.price : (mock as NonNullable<typeof mock>).price) * 100;
   try {
-    const existing = await findReusableOrder(user.id, subject.id, amountPaise, config.serviceRoleKey);
+    const existing = await findReusableOrder(user.id, productType, productId, amountPaise, config.serviceRoleKey);
     if (existing) {
       return withRefreshedSession(NextResponse.json({ orderId: existing.provider_order_id, amount: existing.amount_paise, currency: existing.currency, keyId: config.keyId }), refreshed);
     }
 
-    const receipt = `subject_${subject.id}_${user.id.slice(0, 8)}_${Date.now().toString(36)}`.slice(0, 40);
+    const receipt = `${productType}_${productId}_${user.id.slice(0, 8)}_${Date.now().toString(36)}`.slice(0, 40);
     const razorpayResponse = await fetch("https://api.razorpay.com/v1/orders", {
       method: "POST",
       headers: {
         Authorization: `Basic ${Buffer.from(`${config.keyId}:${config.keySecret}`).toString("base64")}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ amount: amountPaise, currency: "INR", receipt, notes: { product_type: "subject_mcq", product_id: subject.id } }),
+      body: JSON.stringify({ amount: amountPaise, currency: "INR", receipt, notes: { product_type: productType, product_id: productId } }),
       cache: "no-store",
     });
     const razorpayOrder = await razorpayResponse.json().catch(() => null) as { id?: string; amount?: number; currency?: string } | null;
@@ -138,7 +144,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Razorpay could not create the test order." }, { status: 502 });
     }
 
-    await createStoredOrder({ userId: user.id, subjectId: subject.id, amountPaise, providerOrderId: razorpayOrder.id, serviceRoleKey: config.serviceRoleKey });
+    await createStoredOrder({ userId: user.id, productType, productId, amountPaise, providerOrderId: razorpayOrder.id, serviceRoleKey: config.serviceRoleKey });
     return withRefreshedSession(NextResponse.json({ orderId: razorpayOrder.id, amount: amountPaise, currency: "INR", keyId: config.keyId }, { status: 201 }), refreshed);
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to create the payment order." }, { status: 502 });

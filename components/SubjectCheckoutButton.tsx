@@ -38,14 +38,15 @@ function loadRazorpayCheckout() {
   return razorpayScript;
 }
 
-export function SubjectCheckoutButton({ subject, subjectName, hasEntitlement }: { subject: string; subjectName: string; hasEntitlement: boolean }) {
+export function SubjectCheckoutButton({ subject, subjectName, hasEntitlement, mockTestId }: { subject?: string; subjectName: string; hasEntitlement: boolean; mockTestId?: string }) {
   const router = useRouter();
+  const isMock = Boolean(mockTestId);
   const [state, setState] = useState<"idle" | "starting" | "verifying">("idle");
   const [message, setMessage] = useState("");
 
   const startCheckout = async () => {
     if (hasEntitlement) {
-      router.push(`/mcq-practice/${encodeURIComponent(subject)}/attempt`);
+      router.push(isMock ? `/mock-tests/${encodeURIComponent(mockTestId as string)}/attempt` : `/mcq-practice/${encodeURIComponent(subject as string)}/attempt`);
       return;
     }
 
@@ -57,7 +58,7 @@ export function SubjectCheckoutButton({ subject, subjectName, hasEntitlement }: 
         fetch("/api/payments/create-order", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ subject }),
+          body: JSON.stringify(isMock ? { mockTestId } : { subject }),
         }),
       ]);
       const order = await orderResponse.json().catch(() => ({})) as CreateOrderResponse;
@@ -72,7 +73,7 @@ export function SubjectCheckoutButton({ subject, subjectName, hasEntitlement }: 
         amount,
         currency,
         name: "JK Test Point",
-        description: `${subjectName} MCQ Practice`,
+        description: isMock ? subjectName : `${subjectName} MCQ Practice`,
         order_id: orderId,
         handler: async (payment) => {
           setState("verifying");
@@ -84,7 +85,7 @@ export function SubjectCheckoutButton({ subject, subjectName, hasEntitlement }: 
             });
             const verified = await verifyResponse.json().catch(() => ({})) as { status?: string; error?: string };
             if (!verifyResponse.ok || verified.status !== "paid") throw new Error(verified.error || "Payment verification failed. Your access has not been changed.");
-            router.push(`/mcq-practice/${encodeURIComponent(subject)}/attempt`);
+            router.push(isMock ? `/mock-tests/${encodeURIComponent(mockTestId as string)}/attempt` : `/mcq-practice/${encodeURIComponent(subject as string)}/attempt`);
             router.refresh();
           } catch (error) {
             setMessage(error instanceof Error ? error.message : "Payment verification failed. Your access has not been changed.");

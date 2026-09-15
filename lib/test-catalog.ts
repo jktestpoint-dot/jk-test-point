@@ -46,12 +46,15 @@ async function getStoredQuestionCount(testId: string): Promise<number> {
 async function withStoredQuestionCounts(tests: CatalogTest[]): Promise<CatalogTest[]> {
   return Promise.all(
     tests.map(async (test) => {
-      const questionCount = await getStoredQuestionCount(test.id);
-      return {
-        ...test,
-        question_count: questionCount,
-        duration_minutes: questionCount,
-      };
+      try {
+        const questionCount = await getStoredQuestionCount(test.id);
+        return { ...test, question_count: questionCount, duration_minutes: questionCount };
+      } catch {
+        // Paid question rows are intentionally protected by RLS. Keep the
+        // already-published catalogue metadata when an anonymous count query
+        // is unavailable, so listing remains public without exposing rows.
+        return test;
+      }
     }),
   );
 }
@@ -83,7 +86,13 @@ export async function getPublishedCatalogTest(id: string): Promise<CatalogTest |
   });
   const data = await catalogRequest(`?${params.toString()}`);
   if (!Array.isArray(data) || !isCatalogTest(data[0])) return null;
-  const questionCount = await getStoredQuestionCount(data[0].id);
+  let questionCount = data[0].question_count;
+  try {
+    questionCount = await getStoredQuestionCount(data[0].id);
+  } catch {
+    // The catalogue count is safe public metadata; question rows remain
+    // protected and are fetched only after the access check.
+  }
   return {
     ...data[0],
     question_count: questionCount,

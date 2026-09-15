@@ -177,7 +177,7 @@ async function getBookmarkSources(bookmarks: Bookmark[], accessToken: string) {
       if (sourceType === "mock") {
         const test = await getPublishedCatalogTest(sourceKey);
         if (!test) return [key, { label: "Mock test", questions: [] }];
-        const questions = await getPublicTestQuestions(sourceKey);
+        const questions = await getPublicTestQuestions(sourceKey, accessToken);
         return [key, { label: test.title, questions }];
       }
 

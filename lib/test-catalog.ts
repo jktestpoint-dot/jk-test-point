@@ -91,10 +91,13 @@ export async function getPublishedCatalogTest(id: string): Promise<CatalogTest |
   };
 }
 
-export async function getPublicTestQuestions(testId: string): Promise<PublicTestQuestion[]> {
+export async function getPublicTestQuestions(testId: string, accessToken?: string): Promise<PublicTestQuestion[]> {
   const { url, key } = getSupabaseConfig();
   const params = new URLSearchParams({ select: "id,question_number,question_text,option_a,option_b,option_c,option_d", test_id: `eq.${testId}`, order: "question_number.asc" });
-  const response = await fetch(`${url}/rest/v1/TEST_QUESTIONS?${params.toString()}`, { headers: { apikey: key, "Accept-Profile": "public" }, cache: "no-store" });
+  const response = await fetch(`${url}/rest/v1/TEST_QUESTIONS?${params.toString()}`, {
+    headers: { apikey: key, "Accept-Profile": "public", ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) },
+    cache: "no-store",
+  });
   if (!response.ok) throw new Error(`Test questions query failed (${response.status}).`);
   const rows = await response.json() as Array<{ id: string; question_number: number; question_text: string; option_a: string; option_b: string; option_c: string; option_d: string }>;
   return rows.map((row) => ({ id: row.id, question_number: row.question_number, text: row.question_text, options: [row.option_a, row.option_b, row.option_c, row.option_d] }));

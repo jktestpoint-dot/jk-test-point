@@ -20,6 +20,6 @@ export const metadata: Metadata = {
 };
 export default async function RootLayout({children}:{children:React.ReactNode}) {
   const freePracticeSubjects = await getAvailableFreePracticeSubjects().catch(() => []);
-  const freePracticeHref = freePracticeSubjects[0] ? `/free-mcq-practice/${freePracticeSubjects[0].id}` : null;
+  const freePracticeHref = freePracticeSubjects.length ? "/free-mcq-practice" : null;
   return <html lang="en"><body><Header freePracticeHref={freePracticeHref}/><main>{children}</main><Footer freePracticeHref={freePracticeHref}/></body></html>
 }

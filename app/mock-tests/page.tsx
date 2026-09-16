@@ -38,7 +38,7 @@ export default function MockTests() {
   useEffect(() => {
     let active = true;
     fetch("/api/tests", { cache: "no-store" }).then(async (response) => {
-      const body = await response.json() as ApiResponse;
+      const body = await response.json().catch(() => ({})) as ApiResponse;
       if (!response.ok) throw new Error(body.error || "Unable to load mock tests.");
       return body.data || [];
     }).then((data) => { if (active) setTests(data); }).catch((reason: unknown) => {

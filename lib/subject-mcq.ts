@@ -1,3 +1,4 @@
+import "server-only";
 import { getSupabaseConfig } from "@/lib/supabase";
 import { getMcqPracticeSubject } from "@/lib/mcq-practice";
 
@@ -16,8 +17,9 @@ export async function getPublicSubjectQuestions(subject: string, accessToken: st
 export async function getSubjectQuestionCount(subject: string): Promise<number> {
   if (!getMcqPracticeSubject(subject)) return 0;
   const { url, key } = getSupabaseConfig();
+  const serverKey = process.env.SUPABASE_SERVICE_ROLE_KEY || key;
   const params = new URLSearchParams({ select: "id", subject: `eq.${subject}` });
-  const response = await fetch(`${url}/rest/v1/SUBJECT_MCQ_QUESTIONS?${params.toString()}`, { method: "HEAD", headers: { apikey: key, "Accept-Profile": "public", Prefer: "count=exact", Range: "0-0" }, cache: "no-store" });
+  const response = await fetch(`${url}/rest/v1/SUBJECT_MCQ_QUESTIONS?${params.toString()}`, { method: "HEAD", headers: { apikey: serverKey, Authorization: `Bearer ${serverKey}`, "Accept-Profile": "public", Prefer: "count=exact", Range: "0-0" }, cache: "no-store" });
   const count = response.headers.get("content-range")?.match(/\/(\d+)$/)?.[1];
   if (!response.ok || count === undefined) throw new Error(`Subject question-count query failed (${response.status}).`);
   return Number(count);

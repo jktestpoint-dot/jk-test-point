@@ -5,8 +5,9 @@ import { getMcqPracticeSubject } from "@/lib/mcq-practice";
 import { getSupabaseConfig } from "@/lib/supabase";
 
 function subjectErrors(rows: { subject?: string }[], id: string, name: string) {
-  const allowed = new Set([id, name.toLowerCase()]);
-  return rows.flatMap((row, index) => row.subject && !allowed.has(row.subject.trim().toLowerCase()) ? [`Row ${index + 2}: subject must match ${name}.`] : []);
+  const normalize = (value: string) => value.replace(/^\uFEFF/, "").trim().replace(/[\s_-]+/g, " ").toLowerCase();
+  const allowed = new Set([id, name].map(normalize));
+  return rows.flatMap((row, index) => row.subject && !allowed.has(normalize(row.subject)) ? [`Row ${index + 2}: subject must match ${name}.`] : []);
 }
 
 export async function POST(request: NextRequest) {

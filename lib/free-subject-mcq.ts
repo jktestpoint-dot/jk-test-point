@@ -1,6 +1,5 @@
 import { getSupabaseConfig } from "@/lib/supabase";
-import { getMcqPracticeSubject } from "@/lib/mcq-practice";
-import { getFreeSubjectDatabaseKey } from "@/lib/free-subject-catalog";
+import { getFreeSubjectDatabaseKey, getFreeSubjectDefinition } from "@/lib/free-subject-catalog";
 
 export type PublicFreeSubjectQuestion = {
   id: string;
@@ -11,7 +10,7 @@ export type PublicFreeSubjectQuestion = {
 };
 
 export async function getFreePublicSubjectQuestions(subject: string, accessToken: string): Promise<PublicFreeSubjectQuestion[]> {
-  if (!getMcqPracticeSubject(subject)) return [];
+  if (!getFreeSubjectDefinition(subject)) return [];
   const { url, key } = getSupabaseConfig();
   const response = await fetch(`${url}/rest/v1/rpc/get_free_subject_mcq_questions`, {
     method: "POST",

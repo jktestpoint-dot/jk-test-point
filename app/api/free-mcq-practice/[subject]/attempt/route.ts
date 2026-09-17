@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE, getAuthenticatedStudent, refreshStudentSession } from "@/lib/supabase-auth";
 import { getSupabaseConfig } from "@/lib/supabase";
-import { getMcqPracticeSubject } from "@/lib/mcq-practice";
+import { getFreeSubjectDefinition } from "@/lib/free-subject-catalog";
 import { getFreeSubjectDatabaseKey } from "@/lib/free-subject-catalog";
 
 async function getSession() {
@@ -30,7 +30,7 @@ function withRefreshedSession(response: NextResponse, refreshed: Awaited<ReturnT
 }
 
 export async function GET(request: NextRequest, { params }: { params: { subject: string } }) {
-  if (!getMcqPracticeSubject(params.subject)) return NextResponse.json({ error: "Subject not found." }, { status: 404 });
+  if (!getFreeSubjectDefinition(params.subject)) return NextResponse.json({ error: "Subject not found." }, { status: 404 });
   const { accessToken, user, refreshed } = await getSession();
   if (!accessToken || !user) return NextResponse.json({ error: "Please log in to view this free practice result." }, { status: 401 });
   const attemptId = request.nextUrl.searchParams.get("attempt");
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest, { params }: { params: { subject:
 }
 
 export async function POST(request: NextRequest, { params }: { params: { subject: string } }) {
-  if (!getMcqPracticeSubject(params.subject)) return NextResponse.json({ error: "Subject not found." }, { status: 404 });
+  if (!getFreeSubjectDefinition(params.subject)) return NextResponse.json({ error: "Subject not found." }, { status: 404 });
   const { accessToken, user, refreshed } = await getSession();
   if (!accessToken || !user) return NextResponse.json({ error: "Please log in before submitting free practice." }, { status: 401 });
   try {

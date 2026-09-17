@@ -28,6 +28,11 @@ export function getFreeSubjectDatabaseKey(subjectId: string) {
   return APPROVED_FREE_SUBJECTS.find(([id]) => id === subjectId)?.[1] || subjectId;
 }
 
+export function getFreeSubjectDefinition(subjectId: string) {
+  const entry = APPROVED_FREE_SUBJECTS.find(([id]) => id === subjectId);
+  return entry ? { id: entry[0], name: entry[1] } : null;
+}
+
 /**
  * Homepage discovery only: exposes an active mapping count, never question
  * identifiers, content, options, answers, or a service credential.

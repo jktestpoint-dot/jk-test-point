@@ -1,10 +1,10 @@
 import { notFound, redirect } from "next/navigation";
 import { cookies } from "next/headers";
-import { getMcqPracticeSubject } from "@/lib/mcq-practice";
+import { getFreeSubjectDefinition } from "@/lib/free-subject-catalog";
 import { ACCESS_TOKEN_COOKIE, getAuthenticatedStudent } from "@/lib/supabase-auth";
 
 export default async function FreeMcqPracticeSubjectPage({ params }: { params: { subject: string } }) {
-  const subject = getMcqPracticeSubject(params.subject);
+  const subject = getFreeSubjectDefinition(params.subject);
   if (!subject) return notFound();
   const token = cookies().get(ACCESS_TOKEN_COOKIE)?.value;
   if (!token || !await getAuthenticatedStudent(token)) redirect(`/login?next=/free-mcq-practice/${subject.id}`);

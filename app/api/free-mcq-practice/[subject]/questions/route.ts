@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { getMcqPracticeSubject } from "@/lib/mcq-practice";
+import { getFreeSubjectDefinition } from "@/lib/free-subject-catalog";
 import { getFreePublicSubjectQuestions } from "@/lib/free-subject-mcq";
 import { ACCESS_TOKEN_COOKIE, getAuthenticatedStudent } from "@/lib/supabase-auth";
 
 export async function GET(_: Request, { params }: { params: { subject: string } }) {
-  if (!getMcqPracticeSubject(params.subject)) return NextResponse.json({ error: "Subject not found." }, { status: 404 });
+  if (!getFreeSubjectDefinition(params.subject)) return NextResponse.json({ error: "Subject not found." }, { status: 404 });
   try {
     const token = cookies().get(ACCESS_TOKEN_COOKIE)?.value;
     const user = token ? await getAuthenticatedStudent(token) : null;

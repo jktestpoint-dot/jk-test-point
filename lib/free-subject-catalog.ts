@@ -6,6 +6,20 @@ export type FreePracticeSubject = (typeof MCQ_PRACTICE_SUBJECTS)[number] & {
   freeQuestionCount: number;
 };
 
+const APPROVED_FREE_SUBJECTS = new Set([
+  "j&k gk",
+  "general knowledge",
+  "mathematics",
+  "reasoning",
+  "english",
+  "general science",
+  "computer",
+  "indian polity",
+  "history",
+  "geography",
+  "accountancy",
+]);
+
 /**
  * Homepage discovery only: exposes an active mapping count, never question
  * identifiers, content, options, answers, or a service credential.
@@ -26,6 +40,7 @@ export async function getAvailableFreePracticeSubjects(): Promise<FreePracticeSu
     if (typeof row.subject === "string") counts.set(row.subject, (counts.get(row.subject) || 0) + 1);
   }
   return MCQ_PRACTICE_SUBJECTS.flatMap((subject) => {
+    if (!APPROVED_FREE_SUBJECTS.has(subject.name.toLowerCase())) return [];
     const freeQuestionCount = counts.get(subject.id) || 0;
     return freeQuestionCount > 0 ? [{ ...subject, freeQuestionCount }] : [];
   });

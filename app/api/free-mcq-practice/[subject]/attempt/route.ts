@@ -40,7 +40,7 @@ export async function GET(request: NextRequest, { params }: { params: { subject:
     const query = new URLSearchParams({
       select: "id,subject,score,percentage,total_questions,correct,incorrect,unattempted,review,created_at",
       id: `eq.${attemptId}`,
-      subject: `eq.${params.subject}`,
+      subject: `eq.${getFreeSubjectDatabaseKey(params.subject)}`,
       limit: "1",
     });
     const response = await fetch(`${url}/rest/v1/FREE_SUBJECT_MCQ_ATTEMPTS?${query.toString()}`, {

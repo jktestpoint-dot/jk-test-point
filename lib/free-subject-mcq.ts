@@ -1,5 +1,6 @@
 import { getSupabaseConfig } from "@/lib/supabase";
 import { getMcqPracticeSubject } from "@/lib/mcq-practice";
+import { getFreeSubjectDatabaseKey } from "@/lib/free-subject-catalog";
 
 export type PublicFreeSubjectQuestion = {
   id: string;
@@ -20,7 +21,7 @@ export async function getFreePublicSubjectQuestions(subject: string, accessToken
       "Content-Type": "application/json",
       "Content-Profile": "public",
     },
-    body: JSON.stringify({ p_subject: subject }),
+    body: JSON.stringify({ p_subject: getFreeSubjectDatabaseKey(subject) }),
     cache: "no-store",
   });
   if (!response.ok) throw new Error(`Free subject question query failed (${response.status}).`);

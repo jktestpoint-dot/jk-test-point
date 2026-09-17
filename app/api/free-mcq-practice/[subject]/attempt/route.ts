@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE, getAuthenticatedStudent, refreshStudentSession } from "@/lib/supabase-auth";
 import { getSupabaseConfig } from "@/lib/supabase";
 import { getMcqPracticeSubject } from "@/lib/mcq-practice";
+import { getFreeSubjectDatabaseKey } from "@/lib/free-subject-catalog";
 
 async function getSession() {
   const store = cookies();
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest, { params }: { params: { subject
     const response = await fetch(`${url}/rest/v1/rpc/submit_free_subject_mcq_attempt`, {
       method: "POST",
       headers: { apikey: key, Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json", "Content-Profile": "public" },
-      body: JSON.stringify({ p_subject: params.subject, p_answers: answers }),
+      body: JSON.stringify({ p_subject: getFreeSubjectDatabaseKey(params.subject), p_answers: answers }),
       cache: "no-store",
     });
     const data = await response.json().catch(() => null) as { message?: string } | null;

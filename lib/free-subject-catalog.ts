@@ -24,6 +24,10 @@ const APPROVED_FREE_SUBJECTS = [
   ["accountancy", "Accountancy"],
 ] as const;
 
+export function getFreeSubjectDatabaseKey(subjectId: string) {
+  return APPROVED_FREE_SUBJECTS.find(([id]) => id === subjectId)?.[1] || subjectId;
+}
+
 /**
  * Homepage discovery only: exposes an active mapping count, never question
  * identifiers, content, options, answers, or a service credential.
@@ -50,7 +54,7 @@ export async function getAvailableFreePracticeSubjects(): Promise<FreePracticeSu
       name,
       mcqCount: configured?.mcqCount || 0,
       price: configured?.price || 0,
-      freeQuestionCount: counts.get(id) || 0,
+    freeQuestionCount: counts.get(id) || counts.get(name) || 0,
     };
   });
 }

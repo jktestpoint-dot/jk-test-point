@@ -12,6 +12,8 @@ export const MCQ_PRACTICE_SUBJECTS = [
   { id: "indian-polity", name: "Indian Polity", mcqCount: 0, price: 30 },
   { id: "history", name: "History", mcqCount: 0, price: 30 },
   { id: "geography", name: "Geography", mcqCount: 0, price: 30 },
+  { id: "environment", name: "Environment", mcqCount: 0, price: 30 },
+  { id: "indian-economy", name: "Indian Economy", mcqCount: 0, price: 30 },
 ] as const;
 
 export function getMcqPracticeSubject(id: string) {

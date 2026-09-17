@@ -21,7 +21,8 @@ const APPROVED_FREE_SUBJECTS = [
   ["indian-polity", "Indian Polity"],
   ["history", "History"],
   ["geography", "Geography"],
-  ["accountancy", "Accountancy"],
+  ["environment", "Environment"],
+  ["indian-economy", "Indian Economy"],
 ] as const;
 
 export function getFreeSubjectDatabaseKey(subjectId: string) {

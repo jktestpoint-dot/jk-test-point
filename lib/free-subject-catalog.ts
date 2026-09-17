@@ -33,7 +33,7 @@ export async function getAvailableFreePracticeSubjects(): Promise<FreePracticeSu
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !serviceKey) return [];
 
-  const response = await fetch(`${url}/rest/v1/FREE_SUBJECT_MCQ_QUESTIONS?select=subject&is_active=eq.true`, {
+  const response = await fetch(`${url}/rest/v1/FREE_MCQ_QUESTIONS?select=subject`, {
     headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, "Accept-Profile": "public" },
     cache: "no-store",
   });

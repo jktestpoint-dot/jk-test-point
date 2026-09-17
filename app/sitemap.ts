@@ -13,6 +13,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     ...staticRoutes.map((path) => ({ url: `${baseUrl}${path}` })),
     ...tests.map((test) => ({ url: `${baseUrl}/mock-tests/${encodeURIComponent(test.id)}` })),
-    ...freeSubjects.map((subject) => ({ url: `${baseUrl}/free-mcq-practice/${encodeURIComponent(subject.id)}` })),
+    ...freeSubjects.filter((subject) => subject.freeQuestionCount > 0).map((subject) => ({ url: `${baseUrl}/free-mcq-practice/${encodeURIComponent(subject.id)}` })),
   ];
 }

@@ -2,23 +2,27 @@ import "server-only";
 
 import { MCQ_PRACTICE_SUBJECTS } from "@/lib/mcq-practice";
 
-export type FreePracticeSubject = (typeof MCQ_PRACTICE_SUBJECTS)[number] & {
+export type FreePracticeSubject = {
+  id: string;
+  name: string;
+  mcqCount: number;
+  price: number;
   freeQuestionCount: number;
 };
 
-const APPROVED_FREE_SUBJECTS = new Set([
-  "j&k gk",
-  "general knowledge",
-  "mathematics",
-  "reasoning",
-  "english",
-  "general science",
-  "computer",
-  "indian polity",
-  "history",
-  "geography",
-  "accountancy",
-]);
+const APPROVED_FREE_SUBJECTS = [
+  ["jk-gk", "J&K GK"],
+  ["general-knowledge", "General Knowledge"],
+  ["mathematics", "Mathematics"],
+  ["reasoning", "Reasoning"],
+  ["english", "English"],
+  ["general-science", "General Science"],
+  ["computer", "Computer"],
+  ["indian-polity", "Indian Polity"],
+  ["history", "History"],
+  ["geography", "Geography"],
+  ["accountancy", "Accountancy"],
+] as const;
 
 /**
  * Homepage discovery only: exposes an active mapping count, never question
@@ -39,9 +43,14 @@ export async function getAvailableFreePracticeSubjects(): Promise<FreePracticeSu
   for (const row of await response.json() as Array<{ subject?: unknown }>) {
     if (typeof row.subject === "string") counts.set(row.subject, (counts.get(row.subject) || 0) + 1);
   }
-  return MCQ_PRACTICE_SUBJECTS.flatMap((subject) => {
-    if (!APPROVED_FREE_SUBJECTS.has(subject.name.toLowerCase())) return [];
-    const freeQuestionCount = counts.get(subject.id) || 0;
-    return freeQuestionCount > 0 ? [{ ...subject, freeQuestionCount }] : [];
+  return APPROVED_FREE_SUBJECTS.map(([id, name]) => {
+    const configured = MCQ_PRACTICE_SUBJECTS.find((subject) => subject.id === id);
+    return {
+      id,
+      name,
+      mcqCount: configured?.mcqCount || 0,
+      price: configured?.price || 0,
+      freeQuestionCount: counts.get(id) || 0,
+    };
   });
 }

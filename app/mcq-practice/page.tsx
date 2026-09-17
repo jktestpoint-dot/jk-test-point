@@ -12,7 +12,7 @@ export default function PaidMcqPractice() {
         <p className="mt-2 text-sm text-stone-500">{subject.mcqCount} MCQs</p>
         <b className="mt-5 block text-3xl text-brand-700">₹{subject.price}</b>
         <p className="mt-1 text-sm text-stone-500">Per subject</p>
-        <Link href={`/mcq-practice/${subject.id}`} className="btn-primary mt-7 w-full">Start Practice</Link>
+        {subject.mcqCount > 0 ? <Link href={`/mcq-practice/${subject.id}`} className="btn-primary mt-7 w-full">Start Practice</Link> : <span className="mt-7 block rounded-lg bg-stone-100 px-4 py-2 text-center text-sm font-semibold text-stone-500">Coming soon</span>}
       </article>)}
     </div>
   </section>;

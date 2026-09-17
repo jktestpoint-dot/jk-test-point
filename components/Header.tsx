@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-const links = [["Home", "/"], ["Mock Tests", "/mock-tests"], ["Pricing", "/pricing"], ["About", "/about"], ["Contact", "/contact"]] as const;
+const links = [["Home", "/"], ["Mock Tests", "/mock-tests"], ["Paid MCQ Practice", "/mcq-practice"], ["About", "/about"], ["Contact", "/contact"]] as const;
 type Student = { name: string };
 
 export function Header({ freePracticeHref }: { freePracticeHref?: string | null }) {

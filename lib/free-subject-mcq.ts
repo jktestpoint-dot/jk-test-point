@@ -12,6 +12,7 @@ export type PublicFreeSubjectQuestion = {
 export async function getFreePublicSubjectQuestions(subject: string, accessToken: string): Promise<PublicFreeSubjectQuestion[]> {
   if (!getFreeSubjectDefinition(subject)) return [];
   const { url, key } = getSupabaseConfig();
+  const serverKey = process.env.SUPABASE_SERVICE_ROLE_KEY || key;
   const params = new URLSearchParams({
     select: "id,subject,question_number,question_text,option_a,option_b,option_c,option_d",
     subject: `eq.${getFreeSubjectDatabaseKey(subject)}`,
@@ -20,8 +21,8 @@ export async function getFreePublicSubjectQuestions(subject: string, accessToken
   const response = await fetch(`${url}/rest/v1/FREE_MCQ_QUESTIONS?${params.toString()}`, {
     method: "GET",
     headers: {
-      apikey: key,
-      Authorization: `Bearer ${accessToken}`,
+      apikey: serverKey,
+      Authorization: `Bearer ${serverKey}`,
       "Accept-Profile": "public",
     },
     cache: "no-store",

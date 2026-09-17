@@ -2,6 +2,8 @@ import Link from "next/link";
 import { MCQ_PRACTICE_SUBJECTS } from "@/lib/mcq-practice";
 import { getSubjectQuestionCount } from "@/lib/subject-mcq";
 
+export const dynamic = "force-dynamic";
+
 export default async function PaidMcqPractice() {
   const subjects = await Promise.all(MCQ_PRACTICE_SUBJECTS.map(async (subject) => ({
     ...subject,

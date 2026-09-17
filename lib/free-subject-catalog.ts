@@ -32,6 +32,7 @@ export function getFreeSubjectDefinition(subjectId: string) {
   const entry = APPROVED_FREE_SUBJECTS.find(([id]) => id === subjectId);
   return entry ? { id: entry[0], name: entry[1] } : null;
 }
+export function getFreeSubjectDefinitions() { return APPROVED_FREE_SUBJECTS.map(([id, name]) => ({ id, name })); }
 
 /**
  * Homepage discovery only: exposes an active mapping count, never question

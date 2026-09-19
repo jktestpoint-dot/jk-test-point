@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { StudentIllustration } from "@/components/StudentIllustration";
 import { BookmarkToggle } from "@/components/BookmarkToggle";
@@ -27,8 +27,11 @@ export function TestRunner({ testId }: { testId: string }) {
   const [marked, setMarked] = useState<number[]>([]);
   const [seconds, setSeconds] = useState(0);
   const [confirm, setConfirm] = useState(false);
+  const [leaveConfirm, setLeaveConfirm] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const submittedRef = useRef(false);
+  const allowLeaveRef = useRef(false);
 
   useEffect(() => {
     let active = true;
@@ -72,7 +75,10 @@ export function TestRunner({ testId }: { testId: string }) {
 
   const actualQuestionCount = questions.length;
 
-  const finish = async () => {
+  const finish = useCallback(async (fromLeave = false) => {
+    if (submitting || submittedRef.current) return;
+    submittedRef.current = true;
+    if (fromLeave) allowLeaveRef.current = true;
     setSubmitting(true);
     setSubmitError("");
     try {
@@ -101,10 +107,41 @@ export function TestRunner({ testId }: { testId: string }) {
       const attemptId = result.data?.attempt_id;
       router.push(`/results?test=${encodeURIComponent(testId)}${attemptId ? `&attempt=${encodeURIComponent(attemptId)}` : ""}`);
     } catch (error) {
+      submittedRef.current = false;
+      allowLeaveRef.current = false;
+      if (fromLeave) setLeaveConfirm(true);
       setSubmitError(error instanceof Error ? error.message : "Unable to save your test attempt.");
       setSubmitting(false);
     }
-  };
+  }, [answers, actualQuestionCount, questions, router, seconds, submitting, testId]);
+
+  useEffect(() => {
+    if (!questions.length || seconds !== 0 || submitting || submittedRef.current) return;
+    void finish();
+  }, [finish, questions.length, seconds, submitting]);
+
+  useEffect(() => {
+    if (!questions.length) return;
+
+    const guardState = { ...(window.history.state || {}), jkAttemptGuard: true };
+    window.history.pushState(guardState, "", window.location.href);
+    const handlePopState = () => {
+      if (allowLeaveRef.current) return;
+      window.history.pushState(guardState, "", window.location.href);
+      setLeaveConfirm(true);
+    };
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (allowLeaveRef.current) return;
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("popstate", handlePopState);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [questions.length]);
 
   if (loadError) return <section className="container-page py-10"><div className="card text-center text-rose-700">{loadError}</div></section>;
   if (!test) return <section className="container-page py-10"><div className="card text-center text-stone-500">Loading mock test…</div></section>;
@@ -116,5 +153,5 @@ export function TestRunner({ testId }: { testId: string }) {
     text: <span className="block min-w-0 max-w-full whitespace-pre-line break-words [overflow-wrap:anywhere]">{questionText}</span>,
   };
   const answeredCount = answers.filter((answer) => answer !== undefined).length;
-  return <section className="container-page py-6"><div className="mb-5 flex flex-wrap items-center justify-between gap-3"><div><p className="text-sm text-stone-500">Practice mode</p><h1 className="font-bold">{test.title}</h1></div><div className="flex items-center gap-3"><StudentIllustration compact className="hidden md:block"/><div className="rounded-xl bg-brand-900 px-4 py-2 font-mono font-bold text-white">{String(Math.floor(seconds / 60)).padStart(2, "0")}:{String(seconds % 60).padStart(2, "0")}</div><button className="btn-primary !py-2" onClick={() => setConfirm(true)}>Submit Test</button></div></div><div className="grid gap-6 lg:grid-cols-[1fr_260px]"><article className="card"><div className="flex flex-wrap items-center justify-between gap-3"><p className="text-sm font-bold text-brand-600">QUESTION {current + 1} OF {actualQuestionCount}</p><BookmarkToggle sourceType="mock" sourceKey={testId} questionNumber={questions[current].question_number} /></div><h2 className="mt-5 text-xl font-semibold leading-8">{q.text}</h2><div className="mt-6 flex flex-col gap-3">{q.options.map((option, index) => <button key={option} onClick={() => setAnswers((currentAnswers) => { const nextAnswers = [...currentAnswers]; nextAnswers[current] = index; return nextAnswers; })} className={`block min-w-0 w-full whitespace-normal break-words rounded-xl border p-4 text-left transition ${answers[current] === index ? "border-brand-600 bg-brand-50 text-brand-900" : "border-stone-200 hover:border-brand-300"}`}><b className="mr-3 text-brand-600">{String.fromCharCode(65 + index)}.</b>{option}</button>)}</div><div className="mt-8 flex flex-wrap justify-between gap-3"><button className="btn-secondary" disabled={!current} onClick={() => setCurrent(current - 1)}>← Previous</button><button className={`btn-secondary ${marked.includes(current) ? "!bg-amber-50 !text-amber-700" : ""}`} onClick={() => setMarked((markedQuestions) => markedQuestions.includes(current) ? markedQuestions.filter((index) => index !== current) : [...markedQuestions, current])}>{marked.includes(current) ? "Unmark review" : "Mark for Review"}</button><button className="btn-primary" disabled={current === actualQuestionCount - 1} onClick={() => setCurrent(current + 1)}>Next →</button></div></article><aside className="card h-fit"><h2 className="font-bold">Question palette</h2><div className="mt-4 grid grid-cols-5 gap-2">{questions.map((question, index) => <button onClick={() => setCurrent(index)} aria-label={`Question ${index + 1}`} key={question.id} className={`h-9 rounded-lg text-sm font-bold ${index === current ? "bg-brand-600 text-white" : answers[index] !== undefined ? "bg-emerald-100 text-emerald-700" : marked.includes(index) ? "bg-amber-100 text-amber-700" : "bg-stone-100"}`}>{question.question_number}</button>)}</div><div className="mt-5 text-xs leading-6 text-stone-500"><span className="mr-1 inline-block h-2 w-2 rounded-full bg-emerald-400" /> Answered <span className="ml-2 mr-1 inline-block h-2 w-2 rounded-full bg-amber-400" /> Review</div></aside></div>{confirm && <div className="fixed inset-0 z-50 grid place-items-center bg-stone-900/50 p-4"><div className="card max-w-md"><h2 className="text-xl font-bold">Submit your test?</h2><p className="mt-2 text-sm text-stone-500">You have answered {answeredCount} of {actualQuestionCount} questions. This cannot be undone.</p>{submitError && <p className="mt-3 text-sm text-rose-600">{submitError}</p>}<div className="mt-6 flex justify-end gap-3"><button className="btn-secondary" disabled={submitting} onClick={() => setConfirm(false)}>Keep attempting</button><button className="btn-primary" disabled={submitting} onClick={finish}>{submitting ? "Saving..." : "Submit test"}</button></div></div></div>}</section>;
+  return <section className="container-page py-6"><div className="mb-5 flex flex-wrap items-center justify-between gap-3"><div><p className="text-sm text-stone-500">Practice mode</p><h1 className="font-bold">{test.title}</h1></div><div className="flex items-center gap-3"><StudentIllustration compact className="hidden md:block"/><div className="rounded-xl bg-brand-900 px-4 py-2 font-mono font-bold text-white">{String(Math.floor(seconds / 60)).padStart(2, "0")}:{String(seconds % 60).padStart(2, "0")}</div><button className="btn-primary !py-2" onClick={() => setConfirm(true)}>Submit Test</button></div></div><div className="grid gap-6 lg:grid-cols-[1fr_260px]"><article className="card"><div className="flex flex-wrap items-center justify-between gap-3"><p className="text-sm font-bold text-brand-600">QUESTION {current + 1} OF {actualQuestionCount}</p><BookmarkToggle sourceType="mock" sourceKey={testId} questionNumber={questions[current].question_number} /></div><h2 className="mt-5 text-xl font-semibold leading-8">{q.text}</h2><div className="mt-6 flex flex-col gap-3">{q.options.map((option, index) => <button key={option} onClick={() => setAnswers((currentAnswers) => { const nextAnswers = [...currentAnswers]; nextAnswers[current] = index; return nextAnswers; })} className={`block min-w-0 w-full whitespace-normal break-words rounded-xl border p-4 text-left transition ${answers[current] === index ? "border-brand-600 bg-brand-50 text-brand-900" : "border-stone-200 hover:border-brand-300"}`}><b className="mr-3 text-brand-600">{String.fromCharCode(65 + index)}.</b>{option}</button>)}</div><div className="mt-8 flex flex-wrap justify-between gap-3"><button className="btn-secondary" disabled={!current} onClick={() => setCurrent(current - 1)}>← Previous</button><button className={`btn-secondary ${marked.includes(current) ? "!bg-amber-50 !text-amber-700" : ""}`} onClick={() => setMarked((markedQuestions) => markedQuestions.includes(current) ? markedQuestions.filter((index) => index !== current) : [...markedQuestions, current])}>{marked.includes(current) ? "Unmark review" : "Mark for Review"}</button><button className="btn-primary" disabled={current === actualQuestionCount - 1} onClick={() => setCurrent(current + 1)}>Next →</button></div></article><aside className="card h-fit"><h2 className="font-bold">Question palette</h2><div className="mt-4 grid grid-cols-5 gap-2">{questions.map((question, index) => <button onClick={() => setCurrent(index)} aria-label={`Question ${index + 1}`} key={question.id} className={`h-9 rounded-lg text-sm font-bold ${index === current ? "bg-brand-600 text-white" : answers[index] !== undefined ? "bg-emerald-100 text-emerald-700" : marked.includes(index) ? "bg-amber-100 text-amber-700" : "bg-stone-100"}`}>{question.question_number}</button>)}</div><div className="mt-5 text-xs leading-6 text-stone-500"><span className="mr-1 inline-block h-2 w-2 rounded-full bg-emerald-400" /> Answered <span className="ml-2 mr-1 inline-block h-2 w-2 rounded-full bg-amber-400" /> Review</div></aside></div>{confirm && <div className="fixed inset-0 z-50 grid place-items-center bg-stone-900/50 p-4"><div className="card max-w-md"><h2 className="text-xl font-bold">Submit your test?</h2><p className="mt-2 text-sm text-stone-500">You have answered {answeredCount} of {actualQuestionCount} questions. This cannot be undone.</p>{submitError && <p className="mt-3 text-sm text-rose-600">{submitError}</p>}<div className="mt-6 flex justify-end gap-3"><button className="btn-secondary" disabled={submitting} onClick={() => setConfirm(false)}>Keep attempting</button><button className="btn-primary" disabled={submitting} onClick={() => finish()}>{submitting ? "Saving..." : "Submit test"}</button></div></div></div>}{leaveConfirm && <div className="fixed inset-0 z-50 grid place-items-center bg-stone-900/50 p-4"><div className="card max-w-md"><h2 className="text-xl font-bold">Leave this test?</h2><p className="mt-2 text-sm text-stone-500">Are you sure you want to leave the test? Your current attempt will be submitted.</p>{submitError && <p className="mt-3 text-sm text-rose-600">{submitError}</p>}<div className="mt-6 flex justify-end gap-3"><button className="btn-secondary" disabled={submitting} onClick={() => setLeaveConfirm(false)}>Cancel</button><button className="btn-primary" disabled={submitting} onClick={() => finish(true)}>{submitting ? "Submitting..." : "Submit Test"}</button></div></div></div>}</section>;
 }

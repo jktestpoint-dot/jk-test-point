@@ -17,6 +17,7 @@ export const metadata: Metadata = {
     title: "JK Test Point | Better Preparation",
     description: "High-quality mock tests and MCQ practice for Jammu & Kashmir and government exam aspirants.",
   },
+  icons: { icon: "/icon.svg", apple: "/apple-icon.svg" },
 };
 export default async function RootLayout({children}:{children:React.ReactNode}) {
   const freePracticeSubjects = await getAvailableFreePracticeSubjects().catch(() => []);

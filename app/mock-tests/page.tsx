@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import MockTestsLibrary from "@/components/MockTestsLibrary";
-import { getPublishedCatalogTests } from "@/lib/test-catalog";
+import { MockTestCategoryIndex } from "@/components/MockTestCategoryBrowser";
 
 export const metadata: Metadata = {
   title: "JKSSB Mock Tests | Online Practice Tests",
@@ -20,9 +19,5 @@ export const metadata: Metadata = {
 };
 
 export default async function MockTestsPage() {
-  try {
-    return <MockTestsLibrary initialTests={await getPublishedCatalogTests()} />;
-  } catch (error) {
-    return <MockTestsLibrary initialTests={[]} initialError={error instanceof Error ? error.message : "Unable to load mock tests."} />;
-  }
+  return <MockTestCategoryIndex />;
 }

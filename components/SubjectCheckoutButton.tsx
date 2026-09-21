@@ -38,13 +38,20 @@ function loadRazorpayCheckout() {
   return razorpayScript;
 }
 
-export function SubjectCheckoutButton({ subject, subjectName, hasEntitlement, mockTestId }: { subject?: string; subjectName: string; hasEntitlement: boolean; mockTestId?: string }) {
+export function SubjectCheckoutButton({ subject, subjectName, hasEntitlement, mockTestId, isAuthenticated = true }: { subject?: string; subjectName: string; hasEntitlement: boolean; mockTestId?: string; isAuthenticated?: boolean }) {
   const router = useRouter();
   const isMock = Boolean(mockTestId);
   const [state, setState] = useState<"idle" | "starting" | "verifying">("idle");
   const [message, setMessage] = useState("");
 
   const startCheckout = async () => {
+    if (!isAuthenticated) {
+      const destination = isMock
+        ? `/mock-tests/${encodeURIComponent(mockTestId as string)}`
+        : `/mcq-practice/${encodeURIComponent(subject as string)}`;
+      router.push(`/login?next=${encodeURIComponent(destination)}`);
+      return;
+    }
     if (hasEntitlement) {
       router.push(isMock ? `/mock-tests/${encodeURIComponent(mockTestId as string)}/attempt` : `/mcq-practice/${encodeURIComponent(subject as string)}/attempt`);
       return;

@@ -21,7 +21,10 @@ export default function MockTestsLibrary({ initialTests, initialError = "" }: { 
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("All");
   const tests = initialTests;
-  const availableCategories = useMemo(() => Array.from(new Set(tests.map((test) => test.main_category))).sort(), [tests]);
+  const availableCategories = useMemo(() => {
+    const categories = Array.from(new Set(tests.map((test) => test.main_category))).sort();
+    return categories.includes("JKSSB") ? ["JKSSB", ...categories.filter((category) => category !== "JKSSB")] : categories;
+  }, [tests]);
   const grouped = useMemo(() => availableCategories.map((main) => ({ main, tests: tests.filter((test) => test.main_category === main).sort((a, b) => a.subcategory.localeCompare(b.subcategory) || a.title.localeCompare(b.title)) })), [availableCategories, tests]);
   const shown = useMemo(() => tests.filter((test) => { const [main, subcategory] = category.split("::"); const matchesCategory = category === "All" || (test.main_category === main && (!subcategory || test.subcategory === subcategory)); return matchesCategory && `${test.title} ${test.main_category} ${test.subcategory}`.toLowerCase().includes(query.toLowerCase()); }), [category, query, tests]);
   const activeMainCategory = category === "All" ? "All" : category.split("::")[0];

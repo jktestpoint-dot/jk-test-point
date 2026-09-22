@@ -3,11 +3,11 @@ import type { Metadata } from "next";
 import { getAvailableFreePracticeSubjects } from "@/lib/free-subject-catalog";
 
 export const metadata: Metadata = {
-  title: "Free MCQ Practice | JK Test Point",
+  title: "Free MCQ Practice",
   description: "Browse free subject-wise MCQ practice for Jammu & Kashmir and competitive-exam preparation.",
   alternates: { canonical: "/free-mcq-practice" },
-  openGraph: { title: "Free MCQ Practice | JK Test Point", description: "Browse free subject-wise MCQ practice for Jammu & Kashmir and competitive-exam preparation.", url: "/free-mcq-practice", type: "website" },
-  twitter: { card: "summary", title: "Free MCQ Practice | JK Test Point", description: "Browse free subject-wise MCQ practice for Jammu & Kashmir and competitive-exam preparation." },
+  openGraph: { title: "Free MCQ Practice", description: "Browse free subject-wise MCQ practice for Jammu & Kashmir and competitive-exam preparation.", url: "/free-mcq-practice", type: "website" },
+  twitter: { card: "summary", title: "Free MCQ Practice", description: "Browse free subject-wise MCQ practice for Jammu & Kashmir and competitive-exam preparation." },
 };
 
 export default async function FreeMcqPracticePage() {

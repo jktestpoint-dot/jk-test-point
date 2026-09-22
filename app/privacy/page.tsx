@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy | JK Test Point",
+  title: "Privacy Policy",
   description: "Read how JK Test Point handles account, practice, result and payment-related information.",
   alternates: { canonical: "/privacy" },
-  openGraph: { title: "Privacy Policy | JK Test Point", description: "Read how JK Test Point handles account, practice, result and payment-related information.", url: "/privacy", type: "website" },
-  twitter: { card: "summary", title: "Privacy Policy | JK Test Point", description: "Read how JK Test Point handles account, practice, result and payment-related information." },
+  openGraph: { title: "Privacy Policy", description: "Read how JK Test Point handles account, practice, result and payment-related information.", url: "/privacy", type: "website" },
+  twitter: { card: "summary", title: "Privacy Policy", description: "Read how JK Test Point handles account, practice, result and payment-related information." },
 };
 
 export default function Privacy() {

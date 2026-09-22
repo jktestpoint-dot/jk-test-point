@@ -4,11 +4,11 @@ import { MCQ_PRACTICE_SUBJECTS } from "@/lib/mcq-practice";
 import { getSubjectQuestionCount } from "@/lib/subject-mcq";
 
 export const metadata: Metadata = {
-  title: "Paid MCQ Practice | JK Test Point",
+  title: "Paid MCQ Practice",
   description: "Browse subject-wise paid MCQ question banks, current question counts and practice availability.",
   alternates: { canonical: "/mcq-practice" },
-  openGraph: { title: "Paid MCQ Practice | JK Test Point", description: "Browse subject-wise paid MCQ question banks, current question counts and practice availability.", url: "/mcq-practice", type: "website" },
-  twitter: { card: "summary", title: "Paid MCQ Practice | JK Test Point", description: "Browse subject-wise paid MCQ question banks, current question counts and practice availability." },
+  openGraph: { title: "Paid MCQ Practice", description: "Browse subject-wise paid MCQ question banks, current question counts and practice availability.", url: "/mcq-practice", type: "website" },
+  twitter: { card: "summary", title: "Paid MCQ Practice", description: "Browse subject-wise paid MCQ question banks, current question counts and practice availability." },
 };
 
 export const dynamic = "force-dynamic";

@@ -10,7 +10,14 @@ function labelFromSlug(value: string) {
 
 export async function generateMetadata({ params }: { params: { subcategory: string } }): Promise<Metadata> {
   const label = labelFromSlug(params.subcategory);
-  return { title: `${label} Mock Tests | JK Test Point`, description: `Browse published JKSSB ${label} mock tests on JK Test Point.` };
+  const description = `Browse available ${label} mock tests and exam practice on JK Test Point.`;
+  return {
+    title: `${label} Mock Tests | JK Test Point`,
+    description,
+    alternates: { canonical: `/mock-tests/category/${encodeURIComponent(params.subcategory)}` },
+    openGraph: { title: `${label} Mock Tests | JK Test Point`, description, url: `/mock-tests/category/${encodeURIComponent(params.subcategory)}`, type: "website" },
+    twitter: { card: "summary", title: `${label} Mock Tests | JK Test Point`, description },
+  };
 }
 
 export default async function MockTestCategoryRoute({ params }: { params: { subcategory: string } }) {

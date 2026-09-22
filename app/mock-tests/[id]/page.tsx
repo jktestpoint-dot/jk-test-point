@@ -1,10 +1,25 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getPublishedCatalogTest } from "@/lib/test-catalog";
 import { cookies } from "next/headers";
 import { ACCESS_TOKEN_COOKIE, getAuthenticatedStudent } from "@/lib/supabase-auth";
 import { hasActiveMockEntitlement } from "@/lib/subject-entitlement";
 import { SubjectCheckoutButton } from "@/components/SubjectCheckoutButton";
+
+export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+  const test = await getPublishedCatalogTest(params.id).catch(() => null);
+  if (!test) return { robots: { index: false, follow: false } };
+  const description = `${test.description} ${test.question_count} questions · ${test.duration_minutes} minutes · ${test.main_category} ${test.subcategory} mock test.`;
+  const path = `/mock-tests/${encodeURIComponent(test.id)}`;
+  return {
+    title: `${test.title} | ${test.main_category} Mock Test`,
+    description,
+    alternates: { canonical: path },
+    openGraph: { title: `${test.title} | ${test.main_category} Mock Test`, description, url: path, type: "website" },
+    twitter: { card: "summary", title: `${test.title} | ${test.main_category} Mock Test`, description },
+  };
+}
 
 export default async function TestDetails({ params }: { params: { id: string } }) {
   const test = await getPublishedCatalogTest(params.id).catch(() => null);

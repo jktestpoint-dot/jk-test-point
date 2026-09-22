@@ -4,7 +4,6 @@ export const metadata: Metadata = {
   title: { default: "JK Test Point | Better Preparation", template: "%s | JK Test Point" },
   description: "High-quality mock tests and MCQ practice for Jammu & Kashmir and government exam aspirants.",
   keywords: ["JKSSB mock test", "JKPSC", "Jammu Kashmir exams"],
-  alternates: { canonical: "/" },
   openGraph: {
     type: "website",
     url: "https://jktestpoint.vercel.app",

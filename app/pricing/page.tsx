@@ -1,7 +1,16 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { MCQ_PRACTICE_SUBJECTS } from "@/lib/mcq-practice";
 import { getAvailableFreePracticeSubjects } from "@/lib/free-subject-catalog";
 import { getSubjectQuestionCount } from "@/lib/subject-mcq";
+
+export const metadata: Metadata = {
+  title: "MCQ Practice Pricing | JK Test Point",
+  description: "Compare current subject-wise MCQ prices and question availability on JK Test Point.",
+  alternates: { canonical: "/pricing" },
+  openGraph: { title: "MCQ Practice Pricing | JK Test Point", description: "Compare current subject-wise MCQ prices and question availability on JK Test Point.", url: "/pricing", type: "website" },
+  twitter: { card: "summary", title: "MCQ Practice Pricing | JK Test Point", description: "Compare current subject-wise MCQ prices and question availability on JK Test Point." },
+};
 
 export default async function Pricing() {
   const freePracticeSubjects = await getAvailableFreePracticeSubjects().catch(() => []);

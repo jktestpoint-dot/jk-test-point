@@ -1,6 +1,20 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { HomeProgress } from "@/components/HomeProgress";
 import { getFeaturedMockTests } from "@/lib/featured-tests";
+
+export const metadata: Metadata = {
+  title: "JK Test Point | Better Preparation",
+  description: "Practice free MCQs and browse mock tests for JKSSB and other Jammu & Kashmir competitive exams.",
+  alternates: { canonical: "/" },
+  openGraph: {
+    title: "JK Test Point | Better Preparation",
+    description: "Practice free MCQs and browse mock tests for JKSSB and other Jammu & Kashmir competitive exams.",
+    url: "/",
+    type: "website",
+  },
+  twitter: { card: "summary", title: "JK Test Point | Better Preparation", description: "Practice free MCQs and browse mock tests for JKSSB and other Jammu & Kashmir competitive exams." },
+};
 
 const features = [
   ["Free MCQs", "Start with selected practice questions at no cost."],

@@ -1,1 +1,11 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "About JK Test Point",
+  description: "Learn about JK Test Point, an exam-preparation practice platform for Jammu & Kashmir aspirants.",
+  alternates: { canonical: "/about" },
+  openGraph: { title: "About JK Test Point", description: "Learn about JK Test Point, an exam-preparation practice platform for Jammu & Kashmir aspirants.", url: "/about", type: "website" },
+  twitter: { card: "summary", title: "About JK Test Point", description: "Learn about JK Test Point, an exam-preparation practice platform for Jammu & Kashmir aspirants." },
+};
+
 export default function About(){return <section className="container-page py-14"><div className="mx-auto max-w-3xl"><p className="eyebrow">About JK Test Point</p><h1 className="mt-2 text-4xl font-bold">Preparation that respects your ambition.</h1><p className="mt-6 leading-8 text-stone-600">JK Test Point is an education platform focused on giving Jammu & Kashmir aspirants a dependable, modern place to practise. We combine relevant mock tests, clear explanations and honest progress tracking so every study session has a purpose.</p><div className="mt-8 grid gap-4 sm:grid-cols-2"><div className="card"><h2 className="font-bold">Our mission</h2><p className="mt-2 text-sm text-stone-500">Make quality exam practice accessible, focused and encouraging.</p></div><div className="card"><h2 className="font-bold">Our promise</h2><p className="mt-2 text-sm text-stone-500">Useful tests, transparent plans and tools built around real student needs.</p></div></div></div></section>}

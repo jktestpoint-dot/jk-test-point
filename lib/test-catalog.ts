@@ -20,6 +20,10 @@ function isCatalogTest(value: unknown): value is CatalogTest {
 
 async function getStoredQuestionCount(testId: string): Promise<number> {
   const { url, key } = getSupabaseConfig();
+  // Question rows are protected by RLS. Count them with the server-only
+  // service role when configured, while selecting only `id` via a HEAD request
+  // so no question content is ever returned from this public catalogue path.
+  const countKey = process.env.SUPABASE_SERVICE_ROLE_KEY || key;
   const params = new URLSearchParams({
     select: "id",
     test_id: `eq.${testId}`,
@@ -27,7 +31,8 @@ async function getStoredQuestionCount(testId: string): Promise<number> {
   const response = await fetch(`${url}/rest/v1/TEST_QUESTIONS?${params.toString()}`, {
     method: "HEAD",
     headers: {
-      apikey: key,
+      apikey: countKey,
+      Authorization: `Bearer ${countKey}`,
       "Accept-Profile": "public",
       Prefer: "count=exact",
       Range: "0-0",

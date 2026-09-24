@@ -17,7 +17,6 @@ const disallowed = [
   "/mcq-practice/*/results",
   "/free-mcq-practice/*/attempt",
   "/free-mcq-practice/*/results",
-  "/free-mcq-practice/*",
   "/mock-tests/*/attempt",
   "/mock-tests/*/leaderboard",
   "/payments/",

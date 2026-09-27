@@ -13,6 +13,16 @@ import { getRazorpayPaymentConfig } from "@/lib/razorpay-config";
 
 type RefreshedSession = Awaited<ReturnType<typeof refreshStudentSession>>;
 type StoredOrder = { provider_order_id: string | null; amount_paise: number; currency: string };
+type RazorpayOrderResponse = {
+  id?: string;
+  amount?: number;
+  currency?: string;
+  error?: { code?: unknown; description?: unknown };
+};
+
+function sanitizedProviderMessage(value: unknown) {
+  return typeof value === "string" ? value.slice(0, 500) : undefined;
+}
 
 function withRefreshedSession(response: NextResponse, refreshed: RefreshedSession) {
   if (!refreshed) return response;
@@ -141,8 +151,13 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({ amount: amountPaise, currency: "INR", receipt, notes: { product_type: productType, product_id: productId } }),
       cache: "no-store",
     });
-    const razorpayOrder = await razorpayResponse.json().catch(() => null) as { id?: string; amount?: number; currency?: string } | null;
+    const razorpayOrder = await razorpayResponse.json().catch(() => null) as RazorpayOrderResponse | null;
     if (!razorpayResponse.ok || !razorpayOrder?.id || razorpayOrder.amount !== amountPaise || razorpayOrder.currency !== "INR") {
+      console.error("Razorpay order creation failed", {
+        status: razorpayResponse.status,
+        code: sanitizedProviderMessage(razorpayOrder?.error?.code) || "invalid_order_response",
+        description: sanitizedProviderMessage(razorpayOrder?.error?.description) || "Razorpay returned an invalid order response.",
+      });
       return NextResponse.json({ error: "Razorpay could not create the payment order." }, { status: 502 });
     }
 

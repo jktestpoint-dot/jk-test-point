@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-type CreateOrderResponse = { orderId?: string; amount?: number; currency?: string; keyId?: string; error?: string };
+type CreateOrderResponse = { orderId?: string; amount?: number; currency?: string; keyId?: string; mode?: "test" | "live"; error?: string };
 type RazorpaySuccess = { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string };
 type RazorpayInstance = { open: () => void; on: (event: "payment.failed", callback: () => void) => void };
 
@@ -70,8 +70,11 @@ export function SubjectCheckoutButton({ subject, subjectName, hasEntitlement, mo
       ]);
       const order = await orderResponse.json().catch(() => ({})) as CreateOrderResponse;
       const amount = order.amount;
-      if (!orderResponse.ok || !order.orderId || typeof amount !== "number" || !Number.isInteger(amount) || amount <= 0 || order.currency !== "INR" || !order.keyId?.startsWith("rzp_test_") || !scriptLoaded || !window.Razorpay) {
-        throw new Error(order.error || "Unable to start secure test checkout.");
+      const hasExpectedKey = order.mode === "live"
+        ? order.keyId?.startsWith("rzp_live_")
+        : order.mode === "test" && order.keyId?.startsWith("rzp_test_");
+      if (!orderResponse.ok || !order.orderId || typeof amount !== "number" || !Number.isInteger(amount) || amount <= 0 || order.currency !== "INR" || !hasExpectedKey || !scriptLoaded || !window.Razorpay) {
+        throw new Error(order.error || "Unable to start secure checkout.");
       }
       const { orderId, currency, keyId } = order as Required<Pick<CreateOrderResponse, "orderId" | "currency" | "keyId">>;
 
@@ -104,7 +107,7 @@ export function SubjectCheckoutButton({ subject, subjectName, hasEntitlement, mo
       checkout.on("payment.failed", () => { setMessage("Payment was not completed. No access was granted."); setState("idle"); });
       checkout.open();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to start secure test checkout.");
+      setMessage(error instanceof Error ? error.message : "Unable to start secure checkout.");
       setState("idle");
     }
   };

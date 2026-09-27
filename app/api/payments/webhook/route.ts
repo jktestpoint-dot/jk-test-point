@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseConfig } from "@/lib/supabase";
+import { getRazorpayWebhookConfig } from "@/lib/razorpay-config";
 import { verifyRazorpayWebhookSignature } from "@/lib/razorpay-signature";
 
 type RazorpayCapturedPayment = {
@@ -16,19 +17,12 @@ type RazorpayWebhookPayload = {
   payload?: { payment?: { entity?: RazorpayCapturedPayment } };
 };
 
-function getWebhookConfig() {
-  const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (process.env.RAZORPAY_MODE !== "test" || !webhookSecret || !serviceRoleKey) return null;
-  return { webhookSecret, serviceRoleKey };
-}
-
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0 && value.length <= 255;
 }
 
 export async function POST(request: NextRequest) {
-  const config = getWebhookConfig();
+  const config = getRazorpayWebhookConfig();
   if (!config) return NextResponse.json({ error: "Webhook is not configured." }, { status: 503 });
 
   const signature = request.headers.get("x-razorpay-signature");

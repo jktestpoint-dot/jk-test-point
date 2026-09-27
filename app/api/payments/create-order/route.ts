@@ -9,6 +9,7 @@ import {
 import { getMcqPracticeSubject } from "@/lib/mcq-practice";
 import { getSupabaseConfig } from "@/lib/supabase";
 import { getPublishedCatalogTest } from "@/lib/test-catalog";
+import { getRazorpayPaymentConfig } from "@/lib/razorpay-config";
 
 type RefreshedSession = Awaited<ReturnType<typeof refreshStudentSession>>;
 type StoredOrder = { provider_order_id: string | null; amount_paise: number; currency: string };
@@ -39,18 +40,6 @@ async function getSession() {
   return { user, refreshed };
 }
 
-function getPaymentConfig() {
-  const keyId = process.env.RAZORPAY_KEY_ID;
-  const keySecret = process.env.RAZORPAY_KEY_SECRET;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (process.env.RAZORPAY_MODE !== "test" || !keyId?.startsWith("rzp_test_") || !keySecret || !serviceRoleKey) {
-    return null;
-  }
-
-  return { keyId, keySecret, serviceRoleKey };
-}
-
 async function findReusableOrder(userId: string, productType: string, productId: string, amountPaise: number, serviceRoleKey: string) {
   const { url } = getSupabaseConfig();
   const params = new URLSearchParams({
@@ -71,6 +60,19 @@ async function findReusableOrder(userId: string, productType: string, productId:
   if (!response.ok) throw new Error("Unable to check existing payment orders.");
   const rows = await response.json() as StoredOrder[];
   return rows[0]?.provider_order_id ? rows[0] : null;
+}
+
+async function isReusableProviderOrder(order: StoredOrder, keyId: string, keySecret: string) {
+  const response = await fetch(`https://api.razorpay.com/v1/orders/${encodeURIComponent(order.provider_order_id as string)}`, {
+    headers: { Authorization: `Basic ${Buffer.from(`${keyId}:${keySecret}`).toString("base64")}` },
+    cache: "no-store",
+  });
+  const providerOrder = await response.json().catch(() => null) as { id?: unknown; amount?: unknown; currency?: unknown; status?: unknown } | null;
+  return response.ok
+    && providerOrder?.id === order.provider_order_id
+    && providerOrder.amount === order.amount_paise
+    && providerOrder.currency === order.currency
+    && providerOrder.status === "created";
 }
 
 async function createStoredOrder(input: { userId: string; productType: string; productId: string; amountPaise: number; providerOrderId: string; serviceRoleKey: string }) {
@@ -117,16 +119,16 @@ export async function POST(request: NextRequest) {
   const mock = !subject && mockTestId ? await getPublishedCatalogTest(mockTestId).catch(() => null) : null;
   if (!subject && !mock) return NextResponse.json({ error: "This product is not available for purchase." }, { status: 404 });
 
-  const config = getPaymentConfig();
-  if (!config) return NextResponse.json({ error: "Razorpay test-mode payments are not configured." }, { status: 503 });
+  const config = getRazorpayPaymentConfig();
+  if (!config) return NextResponse.json({ error: "Razorpay payments are not configured for this environment." }, { status: 503 });
 
   const productType = subject ? "subject_mcq" : "mock_test";
   const productId = subject ? subject.id : (mock as NonNullable<typeof mock>).id;
   const amountPaise = (subject ? subject.price : (mock as NonNullable<typeof mock>).price) * 100;
   try {
     const existing = await findReusableOrder(user.id, productType, productId, amountPaise, config.serviceRoleKey);
-    if (existing) {
-      return withRefreshedSession(NextResponse.json({ orderId: existing.provider_order_id, amount: existing.amount_paise, currency: existing.currency, keyId: config.keyId }), refreshed);
+    if (existing && await isReusableProviderOrder(existing, config.keyId, config.keySecret)) {
+      return withRefreshedSession(NextResponse.json({ orderId: existing.provider_order_id, amount: existing.amount_paise, currency: existing.currency, keyId: config.keyId, mode: config.mode }), refreshed);
     }
 
     const receipt = `${productType}_${productId}_${user.id.slice(0, 8)}_${Date.now().toString(36)}`.slice(0, 40);
@@ -141,11 +143,11 @@ export async function POST(request: NextRequest) {
     });
     const razorpayOrder = await razorpayResponse.json().catch(() => null) as { id?: string; amount?: number; currency?: string } | null;
     if (!razorpayResponse.ok || !razorpayOrder?.id || razorpayOrder.amount !== amountPaise || razorpayOrder.currency !== "INR") {
-      return NextResponse.json({ error: "Razorpay could not create the test order." }, { status: 502 });
+      return NextResponse.json({ error: "Razorpay could not create the payment order." }, { status: 502 });
     }
 
     await createStoredOrder({ userId: user.id, productType, productId, amountPaise, providerOrderId: razorpayOrder.id, serviceRoleKey: config.serviceRoleKey });
-    return withRefreshedSession(NextResponse.json({ orderId: razorpayOrder.id, amount: amountPaise, currency: "INR", keyId: config.keyId }, { status: 201 }), refreshed);
+    return withRefreshedSession(NextResponse.json({ orderId: razorpayOrder.id, amount: amountPaise, currency: "INR", keyId: config.keyId, mode: config.mode }, { status: 201 }), refreshed);
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to create the payment order." }, { status: 502 });
   }

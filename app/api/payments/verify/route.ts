@@ -7,6 +7,7 @@ import {
   refreshStudentSession,
 } from "@/lib/supabase-auth";
 import { getSupabaseConfig } from "@/lib/supabase";
+import { getRazorpayPaymentConfig } from "@/lib/razorpay-config";
 import { verifyRazorpaySignature } from "@/lib/razorpay-signature";
 
 type RefreshedSession = Awaited<ReturnType<typeof refreshStudentSession>>;
@@ -35,14 +36,6 @@ async function getSession() {
   return { user, refreshed };
 }
 
-function getPaymentConfig() {
-  const keyId = process.env.RAZORPAY_KEY_ID;
-  const keySecret = process.env.RAZORPAY_KEY_SECRET;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (process.env.RAZORPAY_MODE !== "test" || !keyId?.startsWith("rzp_test_") || !keySecret || !serviceRoleKey) return null;
-  return { keySecret, serviceRoleKey };
-}
-
 function isValidRazorpayIdentifier(value: unknown): value is string {
   return typeof value === "string" && value.length > 0 && value.length <= 255;
 }
@@ -67,18 +60,38 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid Razorpay payment identifiers." }, { status: 400 });
   }
 
-  const config = getPaymentConfig();
-  if (!config) return NextResponse.json({ error: "Razorpay test-mode payments are not configured." }, { status: 503 });
-  if (!verifyRazorpaySignature(orderId, paymentId, signature, config.keySecret)) {
-    return NextResponse.json({ error: "Payment signature verification failed." }, { status: 400 });
-  }
+  const config = getRazorpayPaymentConfig();
+  if (!config) return NextResponse.json({ error: "Razorpay payments are not configured for this environment." }, { status: 503 });
 
   try {
     const { url } = getSupabaseConfig();
-    const orderLookup = await fetch(`${url}/rest/v1/payment_orders?select=product_type&provider=eq.razorpay&provider_order_id=eq.${encodeURIComponent(orderId)}&user_id=eq.${encodeURIComponent(user.id)}&limit=1`, { headers: { apikey: config.serviceRoleKey, Authorization: `Bearer ${config.serviceRoleKey}`, "Accept-Profile": "public" }, cache: "no-store" });
-    const orderRows = await orderLookup.json().catch(() => []) as Array<{ product_type?: string }>;
-    if (!orderLookup.ok || !orderRows[0]?.product_type) return NextResponse.json({ error: "Unknown payment order." }, { status: 400 });
-    const completionRpc = orderRows[0].product_type === "mock_test" ? "complete_mock_payment_order" : "complete_subject_payment_order";
+    const orderLookup = await fetch(`${url}/rest/v1/payment_orders?select=provider_order_id,product_type,amount_paise,currency&provider=eq.razorpay&provider_order_id=eq.${encodeURIComponent(orderId)}&user_id=eq.${encodeURIComponent(user.id)}&limit=1`, { headers: { apikey: config.serviceRoleKey, Authorization: `Bearer ${config.serviceRoleKey}`, "Accept-Profile": "public" }, cache: "no-store" });
+    const orderRows = await orderLookup.json().catch(() => []) as Array<{ provider_order_id?: string; product_type?: string; amount_paise?: number; currency?: string }>;
+    const storedOrder = orderRows[0];
+    if (!orderLookup.ok || !storedOrder?.provider_order_id || !storedOrder.product_type) return NextResponse.json({ error: "Unknown payment order." }, { status: 400 });
+    if (!verifyRazorpaySignature(storedOrder.provider_order_id, paymentId, signature, config.keySecret)) {
+      return NextResponse.json({ error: "Payment signature verification failed." }, { status: 400 });
+    }
+
+    const providerResponse = await fetch(`https://api.razorpay.com/v1/payments/${encodeURIComponent(paymentId)}`, {
+      headers: { Authorization: `Basic ${Buffer.from(`${config.keyId}:${config.keySecret}`).toString("base64")}` },
+      cache: "no-store",
+    });
+    const providerPayment = await providerResponse.json().catch(() => null) as { id?: unknown; order_id?: unknown; amount?: unknown; currency?: unknown; status?: unknown; captured?: unknown } | null;
+    if (!providerResponse.ok || !providerPayment) return NextResponse.json({ error: "Unable to verify the payment with Razorpay." }, { status: 502 });
+    if (
+      providerPayment.id !== paymentId
+      || providerPayment.order_id !== storedOrder.provider_order_id
+      || providerPayment.amount !== storedOrder.amount_paise
+      || providerPayment.currency !== storedOrder.currency
+      || providerPayment.currency !== "INR"
+      || providerPayment.status !== "captured"
+      || providerPayment.captured !== true
+    ) {
+      return NextResponse.json({ error: "Payment has not been captured or does not match this order. Access was not granted." }, { status: 409 });
+    }
+
+    const completionRpc = storedOrder.product_type === "mock_test" ? "complete_mock_payment_order" : "complete_subject_payment_order";
     const response = await fetch(`${url}/rest/v1/rpc/${completionRpc}`, {
       method: "POST",
       headers: {

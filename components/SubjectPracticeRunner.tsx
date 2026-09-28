@@ -9,15 +9,93 @@ type Submission = { attempt_id: string; score: number; percentage: number; quest
 
 export function SubjectPracticeRunner({ subject }: { subject: string }) {
   const router = useRouter();
-  const [questions, setQuestions] = useState<PublicSubjectQuestion[]>([]); const [answers, setAnswers] = useState<(number | undefined)[]>([]); const [current, setCurrent] = useState(0); const [error, setError] = useState(""); const [loading, setLoading] = useState(true); const [submitting, setSubmitting] = useState(false);
+  const [questions, setQuestions] = useState<PublicSubjectQuestion[]>([]);
+  const [answers, setAnswers] = useState<(number | undefined)[]>([]);
+  const [current, setCurrent] = useState(0);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const questionCardRef = useRef<HTMLElement | null>(null);
-  useEffect(() => { let active = true; setLoading(true); setError(""); fetch(`/api/mcq-practice/${encodeURIComponent(subject)}/questions`, { cache: "no-store" }).then(async (response) => { const body = await response.json().catch(() => ({})) as { data?: PublicSubjectQuestion[]; error?: string }; if (!response.ok) throw new Error(body.error || "Unable to load subject questions."); return body.data || []; }).then((data) => { if (!active) return; setQuestions(data); setAnswers(Array(data.length)); setCurrent(0); }).catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : "Unable to load subject questions."); }).finally(() => { if (active) setLoading(false); }); return () => { active = false; }; }, [subject]);
-  useEffect(() => { questionCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }, [questions[current]?.id]);
-  const selectQuestion = (questionId: string) => { const index = questions.findIndex((question) => question.id === questionId); if (index >= 0) setCurrent(index); };
-  const submit = async () => { setSubmitting(true); setError(""); try { const response = await fetch(`/api/mcq-practice/${encodeURIComponent(subject)}/attempt`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ answers: questions.map((question, index) => ({ question_id: question.id, selected_option: answers[index] === undefined ? null : String.fromCharCode(65 + (answers[index] as number)) })) }) }); const body = await response.json().catch(() => ({})) as { data?: Submission; error?: string }; if (!response.ok || !body.data) throw new Error(body.error || "Unable to submit practice."); router.push(`/mcq-practice/${subject}/results?attempt=${encodeURIComponent(body.data.attempt_id)}`); } catch (reason) { setError(reason instanceof Error ? reason.message : "Unable to submit practice."); setSubmitting(false); } };
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setError("");
+    fetch(`/api/mcq-practice/${encodeURIComponent(subject)}/questions`, { cache: "no-store" })
+      .then(async (response) => {
+        const body = await response.json().catch(() => ({})) as { data?: PublicSubjectQuestion[]; error?: string };
+        if (!response.ok) throw new Error(body.error || "Unable to load subject questions.");
+        return body.data || [];
+      })
+      .then((data) => {
+        if (!active) return;
+        setQuestions(data);
+        setAnswers(Array(data.length));
+        setCurrent(0);
+      })
+      .catch((reason: unknown) => {
+        if (active) setError(reason instanceof Error ? reason.message : "Unable to load subject questions.");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => { active = false; };
+  }, [subject]);
+
+  useEffect(() => {
+    questionCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [questions[current]?.id]);
+
+  const selectQuestion = (questionId: string) => {
+    const index = questions.findIndex((question) => question.id === questionId);
+    if (index >= 0) setCurrent(index);
+  };
+
+  const submit = async () => {
+    setSubmitting(true);
+    setError("");
+    try {
+      const response = await fetch(`/api/mcq-practice/${encodeURIComponent(subject)}/attempt`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          answers: questions.map((question, index) => ({
+            question_id: question.id,
+            selected_option: answers[index] === undefined ? null : String.fromCharCode(65 + (answers[index] as number)),
+          })),
+        }),
+      });
+      const body = await response.json().catch(() => ({})) as { data?: Submission; error?: string };
+      if (!response.ok || !body.data) throw new Error(body.error || "Unable to submit practice.");
+      router.push(`/mcq-practice/${subject}/results?attempt=${encodeURIComponent(body.data.attempt_id)}`);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Unable to submit practice.");
+      setSubmitting(false);
+    }
+  };
+
   if (error) return <section className="container-page py-10"><div className="card text-center text-rose-700">{error}</div></section>;
   if (loading) return <section className="container-page py-10"><div className="card text-center text-stone-500">Loading subject MCQs…</div></section>;
   if (!questions.length) return <section className="container-page py-10"><div className="card text-center text-stone-600"><h1 className="text-xl font-bold">This subject is not ready yet. Questions are still being added.</h1><p className="mt-2 text-sm">No subject MCQs have been imported yet.</p></div></section>;
-  const question = questions[current]; const selected = answers[current]; const answered = answers.filter((answer) => answer !== undefined).length;
-  return <section className="container-page py-6"><div className="mb-5 flex flex-wrap items-center justify-between gap-3"><div><p className="text-sm text-stone-500">Subject MCQ Practice</p><h1 className="font-bold capitalize">{subject}</h1></div><button className="btn-primary !py-2" disabled={submitting} onClick={submit}>{submitting ? "Submitting…" : "Submit Practice"}</button></div><div className="mb-5 h-2 overflow-hidden rounded-full bg-brand-50"><div className="h-full bg-brand-600" style={{ width: `${((current + 1) / questions.length) * 100}%` }} /></div><div className="grid gap-6 lg:grid-cols-[1fr_260px]"><article ref={questionCardRef} id={`question-${question.id}`} className="card scroll-mt-6"><div className="flex flex-wrap items-center justify-between gap-3"><p className="text-sm font-bold text-brand-600">QUESTION {current + 1} OF {questions.length}</p><BookmarkToggle sourceType="subject" sourceKey={subject} questionNumber={question.question_number} /></div><h2 className="mt-5 whitespace-pre-line break-words text-xl font-semibold leading-8">{question.text.replace(/\s+(?=\d+\.\s)/g, "\n")}</h2><div className="mt-6 flex flex-col gap-3">{question.options.map((option, index) => <button key={`${question.id}-${index}`} onClick={() => setAnswers((currentAnswers) => { const next = [...currentAnswers]; next[current] = index; return next; })} className={`block w-full break-words rounded-xl border p-4 text-left transition ${selected === index ? "border-brand-600 bg-brand-50 text-brand-900" : "border-stone-200 hover:border-brand-300"}`}><b className="mr-3 text-brand-600">{String.fromCharCode(65 + index)}.</b>{option}</button>)}</div><div className="mt-8 flex justify-between gap-3"><button className="btn-secondary" disabled={current === 0} onClick={() => setCurrent(current - 1)}>← Previous</button><button className="btn-primary" disabled={current === questions.length - 1} onClick={() => setCurrent(current + 1)}>Next →</button></div></article><aside className="card h-fit"><h2 className="font-bold">Question palette</h2><p className="mt-2 text-sm text-stone-500">Answered {answered} of {questions.length}</p><div className="mt-4 grid grid-cols-5 gap-2">{questions.map((item, index) => <button key={item.id} onClick={() => selectQuestion(item.id)} className={`h-9 rounded-lg text-sm font-bold ${index === current ? "bg-brand-600 text-white" : answers[index] !== undefined ? "bg-emerald-100 text-emerald-700" : "bg-stone-100"}`}>{item.question_number}</button>)}</div></aside></div></section>;
+
+  const question = questions[current];
+  const selected = answers[current];
+  const answered = answers.filter((answer) => answer !== undefined).length;
+
+  return <section className="container-page py-4 sm:py-6">
+    <div className="sticky top-[4.5rem] z-20 -mx-4 mb-4 flex items-center justify-between gap-3 border-b border-stone-200 bg-stone-50/95 px-4 py-3 backdrop-blur sm:static sm:mx-0 sm:mb-5 sm:flex-wrap sm:border-0 sm:bg-transparent sm:px-0 sm:py-0">
+      <div className="min-w-0"><p className="text-xs text-stone-500 sm:text-sm">Subject MCQ Practice · {answered}/{questions.length} answered</p><h1 className="truncate font-bold capitalize">{subject.replace(/-/g, " ")}</h1></div>
+      <button className="btn-primary shrink-0 !px-3 !py-2 sm:!px-5" disabled={submitting} onClick={submit}>{submitting ? "Submitting…" : "Submit Practice"}</button>
+    </div>
+    <div className="mb-5 h-2 overflow-hidden rounded-full bg-brand-50" role="progressbar" aria-label="Question progress" aria-valuemin={1} aria-valuemax={questions.length} aria-valuenow={current + 1}><div className="h-full bg-brand-600 transition-[width]" style={{ width: `${((current + 1) / questions.length) * 100}%` }} /></div>
+    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_260px] lg:gap-6">
+      <article ref={questionCardRef} id={`question-${question.id}`} className="card scroll-mt-40 !p-4 sm:scroll-mt-6 sm:!p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3"><p className="text-sm font-bold text-brand-600">QUESTION {current + 1} OF {questions.length}</p><BookmarkToggle sourceType="subject" sourceKey={subject} questionNumber={question.question_number} /></div>
+        <h2 className="mt-5 whitespace-pre-line break-words text-lg font-semibold leading-7 sm:text-xl sm:leading-8">{question.text.replace(/\s+(?=\d+\.\s)/g, "\n")}</h2>
+        <div className="mt-6 flex flex-col gap-3">{question.options.map((option, index) => <button key={`${question.id}-${index}`} aria-pressed={selected === index} onClick={() => setAnswers((currentAnswers) => { const next = [...currentAnswers]; next[current] = index; return next; })} className={`block min-h-12 w-full break-words rounded-xl border p-4 text-left transition ${selected === index ? "border-brand-600 bg-brand-50 text-brand-900 ring-2 ring-brand-600/10" : "border-stone-200 hover:border-brand-300"}`}><b className="mr-3 text-brand-600">{String.fromCharCode(65 + index)}.</b>{option}</button>)}</div>
+        <div className="mt-8 grid grid-cols-2 gap-3"><button className="btn-secondary w-full !px-3" disabled={current === 0} onClick={() => setCurrent(current - 1)}>← Previous</button><button className="btn-primary w-full !px-3" disabled={current === questions.length - 1} onClick={() => setCurrent(current + 1)}>Next →</button></div>
+      </article>
+      <aside className="card h-fit lg:sticky lg:top-24"><h2 className="font-bold">Question palette</h2><p className="mt-2 text-sm text-stone-500">Answered {answered} of {questions.length}</p><div className="mt-4 grid grid-cols-6 gap-2 sm:grid-cols-8 lg:grid-cols-5">{questions.map((item, index) => <button key={item.id} aria-label={`Question ${item.question_number}${answers[index] !== undefined ? ", answered" : ""}`} aria-current={index === current ? "step" : undefined} onClick={() => selectQuestion(item.id)} className={`min-h-10 rounded-lg text-sm font-bold ${index === current ? "bg-brand-600 text-white" : answers[index] !== undefined ? "bg-emerald-100 text-emerald-700" : "bg-stone-100"}`}>{item.question_number}</button>)}</div></aside>
+    </div>
+  </section>;
 }

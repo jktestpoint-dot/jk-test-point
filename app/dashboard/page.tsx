@@ -105,16 +105,18 @@ export default function Dashboard() {
 
   return (
     <section className="container-page py-10">
-      <p className="eyebrow">Student dashboard</p>
-      <h1 className="mt-2 text-3xl font-bold">Welcome back{dashboard ? `, ${dashboard.user.name}` : ""}!</h1>
-      <p className="mt-2 text-stone-500">Keep your momentum going — your next goal is within reach.</p>
+      <div className="page-intro">
+        <p className="eyebrow">Student dashboard</p>
+        <h1 className="mt-2 text-3xl font-bold sm:text-4xl">Welcome back{dashboard ? `, ${dashboard.user.name}` : ""}!</h1>
+        <p className="mt-2 text-stone-500">Keep your momentum going — your next goal is within reach.</p>
+      </div>
       {error && <p className="mt-4 rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{error}</p>}
 
-      <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="mt-7 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
         {performanceMetrics.map(([label, value]) => (
-          <div className="card" key={label}>
+          <div className="card min-w-0 !p-4 sm:!p-5" key={label}>
             <p className="text-sm text-stone-500">{label}</p>
-            <b className="mt-2 block text-3xl text-brand-700">{value}</b>
+            <b className="mt-2 block break-words text-2xl text-brand-700 sm:text-3xl">{value}</b>
           </div>
         ))}
       </div>
@@ -155,7 +157,7 @@ export default function Dashboard() {
 
       <div className="mt-7 grid gap-6 lg:grid-cols-[1.5fr_1fr]">
         <div className="card">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="font-bold">Performance trend</h2>
             <div className="flex items-center gap-3">
               {trend.length > 1 && <span className="text-xs text-stone-400">Oldest to newest</span>}
@@ -170,18 +172,21 @@ export default function Dashboard() {
             <p className="mt-6 text-sm text-stone-500">No attempt data yet. Complete a test to see your progress.</p>
           ) : (
             <>
-              <div className="mt-6 flex h-44 items-end justify-between gap-3">
+              <div className="mt-6 overflow-x-auto pb-2">
+                <div className="flex h-44 min-w-[28rem] items-end justify-between gap-3 border-b border-stone-200" role="img" aria-label="Recent test score trend from oldest to newest">
                 {trend.map((attempt, index) => (
-                  <div className="flex h-full flex-1 flex-col items-center justify-end gap-2" key={attempt.attemptId}>
+                  <div className="flex h-full min-w-12 flex-1 flex-col items-center justify-end gap-2" key={attempt.attemptId}>
                     <span className="text-xs font-semibold text-brand-700">{Math.round(attempt.percentage)}%</span>
                     <div
                       className="min-h-[3px] w-full rounded-t bg-brand-500"
                       style={{ height: `${Math.max(attempt.percentage, 2)}%` }}
                       title={`${attempt.title}: ${Math.round(attempt.percentage)}%`}
+                      aria-hidden="true"
                     />
                     <span className="text-xs text-stone-400">T{index + 1}</span>
                   </div>
                 ))}
+                </div>
               </div>
               {trend.length === 1 && (
                 <p className="mt-4 text-sm text-stone-500">Complete one more test to start comparing your performance.</p>
@@ -216,8 +221,13 @@ export default function Dashboard() {
       </div>
 
       <div className="card mt-6">
-        <h2 className="font-bold">Profile & purchases</h2>
-        <p className="mt-2 text-sm text-stone-500">Your account preferences and payment history will appear here after secure authentication is connected.</p>
+        <h2 className="font-bold">Your study tools</h2>
+        <p className="mt-2 text-sm text-stone-500">Continue from your saved activity or review your account details.</p>
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+          <Link className="btn-secondary" href="/attempts">Attempt history</Link>
+          <Link className="btn-secondary" href="/bookmarks">Saved questions</Link>
+          <Link className="btn-secondary" href="/profile">Profile & settings</Link>
+        </div>
       </div>
     </section>
   );

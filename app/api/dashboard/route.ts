@@ -4,6 +4,7 @@ import { ACCESS_TOKEN_COOKIE, getAuthenticatedStudent } from "@/lib/supabase-aut
 import { getStudentAttempts, getStudentSubjectAttempts, type TestAttempt } from "@/lib/supabase";
 import { getMyActiveSubjectEntitlements } from "@/lib/subject-entitlement";
 import { getMcqPracticeSubject } from "@/lib/mcq-practice";
+import { getPublishedCatalogTest } from "@/lib/test-catalog";
 
 function currentStreak(dates: string[]) {
   const attempted = new Set(dates.map((date) => new Date(date).toISOString().slice(0, 10)));
@@ -40,16 +41,29 @@ export async function GET() {
         };
       }),
     ].sort((left, right) => Date.parse(right.created_at) - Date.parse(left.created_at));
-    const purchasedTests = entitlements.flatMap((entitlement) => {
+    const purchasedTests = (await Promise.all(entitlements.map(async (entitlement) => {
+      if (entitlement.subject.startsWith("mock:")) {
+        const testId = entitlement.subject.slice("mock:".length);
+        const test = await getPublishedCatalogTest(testId).catch(() => null);
+        if (!test || test.price <= 0) return null;
+        return {
+          id: entitlement.id,
+          title: test.title,
+          questionCount: test.question_count,
+          kind: "mock" as const,
+          href: test.question_count > 0 ? `/mock-tests/${encodeURIComponent(test.id)}/attempt` : `/mock-tests/${encodeURIComponent(test.id)}`,
+        };
+      }
       const subject = getMcqPracticeSubject(entitlement.subject);
-      if (!subject) return [];
-      return [{
+      if (!subject) return null;
+      return {
         id: entitlement.id,
         title: `${subject.name} MCQ Practice`,
         questionCount: subject.mcqCount,
+        kind: "subject" as const,
         href: `/mcq-practice/${subject.id}/attempt`,
-      }];
-    });
+      };
+    }))).filter((purchase): purchase is NonNullable<typeof purchase> => purchase !== null);
     const percentages = attempts.map((attempt) => Number(attempt.percentage));
     const average = percentages.length ? Math.round(percentages.reduce((sum, percentage) => sum + percentage, 0) / percentages.length) : 0;
     const best = percentages.length ? Math.round(Math.max(...percentages)) : 0;

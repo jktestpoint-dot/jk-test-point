@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseConfig } from "@/lib/supabase";
 import { getRazorpayWebhookConfig } from "@/lib/razorpay-config";
 import { verifyRazorpayWebhookSignature } from "@/lib/razorpay-signature";
+import { isPaymentDatabaseSafe } from "@/lib/payment-mode";
 
 type RazorpayCapturedPayment = {
   id?: unknown;
@@ -60,6 +61,9 @@ export async function POST(request: NextRequest) {
 
   try {
     const { url } = getSupabaseConfig();
+    if (!isPaymentDatabaseSafe(config.mode, url, process.env.SUPABASE_PRODUCTION_URL)) {
+      return NextResponse.json({ error: "Test payments require an isolated non-production database." }, { status: 503 });
+    }
     const response = await fetch(`${url}/rest/v1/rpc/process_razorpay_payment_captured_webhook`, {
       method: "POST",
       headers: {
@@ -69,6 +73,7 @@ export async function POST(request: NextRequest) {
         "Content-Profile": "public",
       },
       body: JSON.stringify({
+        p_payment_mode: config.mode,
         p_provider_event_id: eventId,
         p_provider_order_id: payment.order_id,
         p_provider_payment_id: payment.id,

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-type PurchasedTest = { id: string; title: string; questionCount: number; href: string };
+type PurchasedTest = { id: string; title: string; questionCount: number; kind: "mock" | "subject"; href: string };
 type AnalyticsAttempt = { attemptId: string; title: string; percentage: number };
 type AnalyticsData = {
   attempts: AnalyticsAttempt[];
@@ -142,7 +142,7 @@ export default function Dashboard() {
             {purchasedTests.map((test) => (
               <div className="rounded-xl border border-brand-100 bg-brand-50 p-4" key={test.id}>
                 <h3 className="font-semibold">{test.title}</h3>
-                <p className="mt-1 text-sm text-stone-500">{test.questionCount} MCQs</p>
+                <p className="mt-1 text-sm text-stone-500">{test.questionCount} {test.kind === "mock" ? "questions" : "MCQs"}</p>
                 <Link className="btn-primary mt-4 w-full" href={test.href}>Start Test</Link>
               </div>
             ))}

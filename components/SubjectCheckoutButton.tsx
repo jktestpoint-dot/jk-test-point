@@ -93,8 +93,10 @@ export function SubjectCheckoutButton({ subject, subjectName, hasEntitlement, mo
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(payment),
             });
-            const verified = await verifyResponse.json().catch(() => ({})) as { status?: string; error?: string };
-            if (!verifyResponse.ok || verified.status !== "paid") throw new Error(verified.error || "Payment verification failed. Your access has not been changed.");
+            const verified = await verifyResponse.json().catch(() => ({})) as { status?: string; paymentMode?: string; accessGranted?: boolean; error?: string };
+            if (!verifyResponse.ok || verified.status !== "paid" || verified.paymentMode !== "live" || verified.accessGranted !== true) {
+              throw new Error(verified.error || (verified.paymentMode === "test" ? "Test payment verified. Live access was not granted." : "Payment verification failed. Your access has not been changed."));
+            }
             router.push(isMock ? `/mock-tests/${encodeURIComponent(mockTestId as string)}/attempt` : `/mcq-practice/${encodeURIComponent(subject as string)}/attempt`);
             router.refresh();
           } catch (error) {

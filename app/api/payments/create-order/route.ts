@@ -10,6 +10,7 @@ import { getMcqPracticeSubject } from "@/lib/mcq-practice";
 import { getSupabaseConfig } from "@/lib/supabase";
 import { getPublishedCatalogTest } from "@/lib/test-catalog";
 import { getRazorpayPaymentConfig } from "@/lib/razorpay-config";
+import { isAvailablePaidMock, isPaymentDatabaseSafe } from "@/lib/payment-mode";
 
 type RefreshedSession = Awaited<ReturnType<typeof refreshStudentSession>>;
 type StoredOrder = { provider_order_id: string | null; amount_paise: number; currency: string };
@@ -50,7 +51,7 @@ async function getSession() {
   return { user, refreshed };
 }
 
-async function findReusableOrder(userId: string, productType: string, productId: string, amountPaise: number, serviceRoleKey: string) {
+async function findReusableOrder(userId: string, productType: string, productId: string, amountPaise: number, mode: string, serviceRoleKey: string) {
   const { url } = getSupabaseConfig();
   const params = new URLSearchParams({
     select: "provider_order_id,amount_paise,currency",
@@ -60,6 +61,7 @@ async function findReusableOrder(userId: string, productType: string, productId:
     product_id: `eq.${productId}`,
     status: "eq.created",
     amount_paise: `eq.${amountPaise}`,
+    payment_mode: `eq.${mode}`,
     order: "created_at.desc",
     limit: "1",
   });
@@ -85,7 +87,7 @@ async function isReusableProviderOrder(order: StoredOrder, keyId: string, keySec
     && providerOrder.status === "created";
 }
 
-async function createStoredOrder(input: { userId: string; productType: string; productId: string; amountPaise: number; providerOrderId: string; serviceRoleKey: string }) {
+async function createStoredOrder(input: { userId: string; productType: string; productId: string; amountPaise: number; providerOrderId: string; paymentMode: string; serviceRoleKey: string }) {
   const { url } = getSupabaseConfig();
   const response = await fetch(`${url}/rest/v1/payment_orders`, {
     method: "POST",
@@ -105,6 +107,7 @@ async function createStoredOrder(input: { userId: string; productType: string; p
       amount_paise: input.amountPaise,
       currency: "INR",
       status: "created",
+      payment_mode: input.paymentMode,
     }),
     cache: "no-store",
   });
@@ -132,11 +135,19 @@ export async function POST(request: NextRequest) {
   const config = getRazorpayPaymentConfig();
   if (!config) return NextResponse.json({ error: "Razorpay payments are not configured for this environment." }, { status: 503 });
 
+  const { url } = getSupabaseConfig();
+  if (!isPaymentDatabaseSafe(config.mode, url, process.env.SUPABASE_PRODUCTION_URL)) {
+    return NextResponse.json({ error: "Test payments require an isolated non-production database." }, { status: 503 });
+  }
+  if (mock && !isAvailablePaidMock(mock.price, mock.question_count)) {
+    return NextResponse.json({ error: "This mock test is not available for purchase yet." }, { status: 409 });
+  }
+
   const productType = subject ? "subject_mcq" : "mock_test";
   const productId = subject ? subject.id : (mock as NonNullable<typeof mock>).id;
   const amountPaise = (subject ? subject.price : (mock as NonNullable<typeof mock>).price) * 100;
   try {
-    const existing = await findReusableOrder(user.id, productType, productId, amountPaise, config.serviceRoleKey);
+    const existing = await findReusableOrder(user.id, productType, productId, amountPaise, config.mode, config.serviceRoleKey);
     if (existing && await isReusableProviderOrder(existing, config.keyId, config.keySecret)) {
       return withRefreshedSession(NextResponse.json({ orderId: existing.provider_order_id, amount: existing.amount_paise, currency: existing.currency, keyId: config.keyId, mode: config.mode }), refreshed);
     }
@@ -161,7 +172,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Razorpay could not create the payment order." }, { status: 502 });
     }
 
-    await createStoredOrder({ userId: user.id, productType, productId, amountPaise, providerOrderId: razorpayOrder.id, serviceRoleKey: config.serviceRoleKey });
+    await createStoredOrder({ userId: user.id, productType, productId, amountPaise, providerOrderId: razorpayOrder.id, paymentMode: config.mode, serviceRoleKey: config.serviceRoleKey });
     return withRefreshedSession(NextResponse.json({ orderId: razorpayOrder.id, amount: amountPaise, currency: "INR", keyId: config.keyId, mode: config.mode }, { status: 201 }), refreshed);
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to create the payment order." }, { status: 502 });

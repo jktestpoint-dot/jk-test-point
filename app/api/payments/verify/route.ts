@@ -9,6 +9,7 @@ import {
 import { getSupabaseConfig } from "@/lib/supabase";
 import { getRazorpayPaymentConfig } from "@/lib/razorpay-config";
 import { verifyRazorpaySignature } from "@/lib/razorpay-signature";
+import { isPaymentDatabaseSafe, paymentModeMatchesOrder } from "@/lib/payment-mode";
 
 type RefreshedSession = Awaited<ReturnType<typeof refreshStudentSession>>;
 
@@ -65,10 +66,14 @@ export async function POST(request: NextRequest) {
 
   try {
     const { url } = getSupabaseConfig();
-    const orderLookup = await fetch(`${url}/rest/v1/payment_orders?select=provider_order_id,product_type,amount_paise,currency&provider=eq.razorpay&provider_order_id=eq.${encodeURIComponent(orderId)}&user_id=eq.${encodeURIComponent(user.id)}&limit=1`, { headers: { apikey: config.serviceRoleKey, Authorization: `Bearer ${config.serviceRoleKey}`, "Accept-Profile": "public" }, cache: "no-store" });
-    const orderRows = await orderLookup.json().catch(() => []) as Array<{ provider_order_id?: string; product_type?: string; amount_paise?: number; currency?: string }>;
+    if (!isPaymentDatabaseSafe(config.mode, url, process.env.SUPABASE_PRODUCTION_URL)) {
+      return NextResponse.json({ error: "Test payments require an isolated non-production database." }, { status: 503 });
+    }
+    const orderLookup = await fetch(`${url}/rest/v1/payment_orders?select=provider_order_id,product_type,amount_paise,currency,payment_mode&provider=eq.razorpay&provider_order_id=eq.${encodeURIComponent(orderId)}&user_id=eq.${encodeURIComponent(user.id)}&limit=1`, { headers: { apikey: config.serviceRoleKey, Authorization: `Bearer ${config.serviceRoleKey}`, "Accept-Profile": "public" }, cache: "no-store" });
+    const orderRows = await orderLookup.json().catch(() => []) as Array<{ provider_order_id?: string; product_type?: string; amount_paise?: number; currency?: string; payment_mode?: string | null }>;
     const storedOrder = orderRows[0];
     if (!orderLookup.ok || !storedOrder?.provider_order_id || !storedOrder.product_type) return NextResponse.json({ error: "Unknown payment order." }, { status: 400 });
+    if (!paymentModeMatchesOrder(storedOrder.payment_mode, config.mode)) return NextResponse.json({ error: "Payment mode does not match the stored order. Access was not changed." }, { status: 409 });
     if (!verifyRazorpaySignature(storedOrder.provider_order_id, paymentId, signature, config.keySecret)) {
       return NextResponse.json({ error: "Payment signature verification failed." }, { status: 400 });
     }
@@ -100,12 +105,20 @@ export async function POST(request: NextRequest) {
         "Content-Type": "application/json",
         "Content-Profile": "public",
       },
-      body: JSON.stringify({ p_user_id: user.id, p_provider_order_id: orderId, p_provider_payment_id: paymentId }),
+      body: JSON.stringify({ p_user_id: user.id, p_provider_order_id: orderId, p_provider_payment_id: paymentId, p_payment_mode: config.mode }),
       cache: "no-store",
     });
-    const data = await response.json().catch(() => null) as { message?: string; subject?: string; amount_paise?: number; status?: string; already_processed?: boolean } | null;
+    const data = await response.json().catch(() => null) as { message?: string; subject?: string; amount_paise?: number; status?: string; payment_mode?: string; already_processed?: boolean } | null;
     if (!response.ok || !data) return NextResponse.json({ error: data?.message || "Unable to complete the payment." }, { status: response.status === 403 ? 403 : 400 });
-    return withRefreshedSession(NextResponse.json({ subject: data.subject, amount: data.amount_paise, status: data.status, alreadyProcessed: data.already_processed === true }), refreshed);
+    if (!paymentModeMatchesOrder(data.payment_mode, config.mode)) return NextResponse.json({ error: "Payment mode could not be confirmed. Access was not changed." }, { status: 409 });
+    return withRefreshedSession(NextResponse.json({
+      subject: data.subject,
+      amount: data.amount_paise,
+      status: data.status,
+      paymentMode: data.payment_mode,
+      accessGranted: config.mode === "live" && data.status === "paid",
+      alreadyProcessed: data.already_processed === true,
+    }), refreshed);
   } catch {
     return NextResponse.json({ error: "Unable to complete the payment." }, { status: 502 });
   }

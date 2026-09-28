@@ -10,13 +10,15 @@ import { hasActiveSubjectEntitlement } from "@/lib/subject-entitlement";
 export async function generateMetadata({ params }: { params: { subject: string } }): Promise<Metadata> {
   const subject = getMcqPracticeSubject(params.subject);
   if (!subject) return { robots: { index: false, follow: false } };
-  const title = `${subject.name} MCQ Practice | JK Test Point`;
+  const title = `${subject.name} MCQ Practice`;
   const description = `View the ${subject.name} subject question bank, current availability and price on JK Test Point.`;
   const path = `/mcq-practice/${encodeURIComponent(subject.id)}`;
+  const questionCount = await getSubjectQuestionCount(subject.id).catch(() => 0);
   return {
     title,
     description,
     alternates: { canonical: path },
+    robots: questionCount > 0 ? undefined : { index: false, follow: true },
     openGraph: { title, description, url: path, type: "website" },
     twitter: { card: "summary", title, description },
   };

@@ -16,6 +16,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
     title: `${test.title} | ${test.main_category} Mock Test`,
     description,
     alternates: { canonical: path },
+    robots: test.question_count > 0 ? undefined : { index: false, follow: true },
     openGraph: { title: `${test.title} | ${test.main_category} Mock Test`, description, url: path, type: "website" },
     twitter: { card: "summary", title: `${test.title} | ${test.main_category} Mock Test`, description },
   };

@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { HomeProgress } from "@/components/HomeProgress";
 import { getFeaturedMockTests } from "@/lib/featured-tests";
+import { slugify } from "@/components/MockTestCategoryBrowser";
 
 export const metadata: Metadata = {
   title: "JK Test Point | Better Preparation",
@@ -31,7 +32,7 @@ export default async function Home() {
       <div className="pointer-events-none absolute -left-32 top-8 h-72 w-72 rounded-full border border-white/10" />
       <div className="pointer-events-none absolute -right-24 bottom-0 h-96 w-96 rounded-full bg-brand-400/20 blur-3xl" />
       <div className="container-page relative grid gap-10 py-16 sm:py-20 lg:grid-cols-[1.05fr_.95fr] lg:py-24">
-        <div className="self-center"><p className="eyebrow !text-brand-200">Your Gateway to Better Preparation</p><h1 className="mt-4 max-w-2xl text-4xl font-extrabold leading-[1.05] sm:text-6xl">Prepare Smarter.<br />Score Better.</h1><p className="mt-5 max-w-xl text-lg leading-8 text-brand-100">Build confidence with focused MCQ practice, mock tests and clear feedback for JK aspirants.</p><div className="mt-8 flex flex-col gap-3 sm:flex-row"><Link href="/free-mcq-practice" className="btn bg-white text-brand-700 hover:bg-brand-50">Start Free Practice</Link><Link href="/mock-tests" className="btn border border-white/30 text-white hover:bg-white/10">Browse Mock Tests</Link></div><div className="mt-10 border-t border-white/15 pt-5"><p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-200">Explore by exam</p><div className="mt-3 flex flex-wrap gap-2">{categories.map((category) => <Link href="/mock-tests" className="rounded-full border border-white/20 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-white/10" key={category}>{category}</Link>)}</div></div></div>
+        <div className="self-center"><p className="eyebrow !text-brand-200">Your Gateway to Better Preparation</p><h1 className="mt-4 max-w-2xl text-4xl font-extrabold leading-[1.05] sm:text-6xl">Prepare Smarter.<br />Score Better.</h1><p className="mt-5 max-w-xl text-lg leading-8 text-brand-100">Build confidence with focused MCQ practice, mock tests and clear feedback for JK aspirants.</p><div className="mt-8 flex flex-col gap-3 sm:flex-row"><Link href="/free-mcq-practice" className="btn bg-white text-brand-700 hover:bg-brand-50">Start Free Practice</Link><Link href="/mock-tests" className="btn border border-white/30 text-white hover:bg-white/10">Browse Mock Tests</Link></div><div className="mt-10 border-t border-white/15 pt-5"><p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-200">Explore by exam</p><div className="mt-3 flex flex-wrap gap-2">{categories.map((category) => <Link href={`/mock-tests/category/${slugify(category)}`} className="rounded-full border border-white/20 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-white/10" key={category}>{category}</Link>)}</div></div></div>
         <div className="relative lg:pl-8"><div className="absolute -inset-5 rounded-[2rem] border border-white/10" /><HomeProgress /></div>
       </div>
     </section>

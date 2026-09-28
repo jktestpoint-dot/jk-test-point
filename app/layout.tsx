@@ -18,8 +18,29 @@ export const metadata: Metadata = {
   },
   icons: { icon: "/icon.svg", apple: "/icon.svg" },
 };
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "EducationalOrganization",
+      "@id": "https://jktestpoint.vercel.app/#organization",
+      name: "JK Test Point",
+      url: "https://jktestpoint.vercel.app/",
+      description: "An exam-preparation practice platform for Jammu & Kashmir aspirants.",
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://jktestpoint.vercel.app/#website",
+      url: "https://jktestpoint.vercel.app/",
+      name: "JK Test Point",
+      publisher: { "@id": "https://jktestpoint.vercel.app/#organization" },
+    },
+  ],
+};
+
 export default async function RootLayout({children}:{children:React.ReactNode}) {
   const freePracticeSubjects = await getAvailableFreePracticeSubjects().catch(() => []);
   const freePracticeHref = freePracticeSubjects.length ? "/free-mcq-practice" : null;
-  return <html lang="en"><body><Header freePracticeHref={freePracticeHref}/><main>{children}</main><Footer freePracticeHref={freePracticeHref}/></body></html>
+  return <html lang="en"><body><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} /><Header freePracticeHref={freePracticeHref}/><main>{children}</main><Footer freePracticeHref={freePracticeHref}/></body></html>
 }
